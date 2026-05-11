@@ -2,3 +2,5 @@
 __pycache__/
 *.pyc
 data/*.sqlite3
+*.csv
+.env
