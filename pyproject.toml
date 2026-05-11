@@ -1,0 +1,22 @@
+[project]
+name = "seabright-insight"
+version = "0.1.0"
+description = "SeaBright Insight company directory web application"
+requires-python = ">=3.11"
+dependencies = [
+  "beautifulsoup4>=4.12.0",
+  "fastapi>=0.115.0",
+  "gunicorn>=22.0.0; platform_system != 'Windows'",
+  "jinja2>=3.1.4",
+  "pandas>=2.2.0",
+  "python-dotenv>=1.0.0",
+  "python-multipart>=0.0.12",
+  "requests>=2.32.0",
+  "sqlalchemy>=2.0.36",
+  "uvicorn[standard]>=0.32.0",
+]
+
+[project.optional-dependencies]
+test = [
+  "httpx>=0.27.0",
+]

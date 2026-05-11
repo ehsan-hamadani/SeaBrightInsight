@@ -4,14 +4,13 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import threading
 from pathlib import Path
 from urllib.parse import urlencode
 from types import SimpleNamespace
 
-from dotenv import load_dotenv
 from fastapi import BackgroundTasks, Depends, FastAPI, Form, Query, Request
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -19,7 +18,7 @@ from sqlalchemy import and_, delete, func, or_, select
 from sqlalchemy.orm import Session
 
 from .ch_urls import jinja_ch_registry_link
-from .date_fmt import jinja_uk_date, normalize_appointment_date
+from .config import REPO_ROOT, settings
 from .phone_display import jinja_phone_cell, jinja_phone_display
 from .db import Base, engine, get_db, migrate_companies_table
 from .enrich import enrich_all_companies_background, enrich_company_merge
@@ -31,12 +30,11 @@ from .fetch_info import (
 from .import_data import import_directors_csv, import_market_research_csv
 from .models import Company, Director
 
-_REPO = Path(__file__).resolve().parent.parent
-load_dotenv(_REPO / ".env")
-_MARKET_CSV = _REPO / "Market Research List.csv"
-_DIRECTORS_CSV = _REPO / "market_research_directors.csv"
+_MARKET_CSV = REPO_ROOT / "Market Research List.csv"
+_DIRECTORS_CSV = REPO_ROOT / "market_research_directors.csv"
 
 app = FastAPI(title="Company Directory", description="Market research company records")
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 templates.env.filters["ch_registry_link"] = jinja_ch_registry_link
 templates.env.filters["phone_display"] = jinja_phone_display
@@ -49,9 +47,8 @@ if _STATIC_DIR.is_dir():
 
 
 def _auto_enrich_background() -> None:
-    delay = float(os.environ.get("AUTO_ENRICH_DELAY_SEC", "1.25") or "1.25")
     try:
-        n = enrich_all_companies_background(delay_sec=delay)
+        n = enrich_all_companies_background(delay_sec=settings.auto_enrich_delay_sec)
         _log.info("AUTO_ENRICH: finished, companies updated this run: %s", n)
     except Exception:
         _log.exception("AUTO_ENRICH: background run failed")
@@ -59,22 +56,25 @@ def _auto_enrich_background() -> None:
 
 @app.on_event("startup")
 def _startup() -> None:
-    Base.metadata.create_all(bind=engine)
-    migrate_companies_table(engine)
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
+    _log.info("Starting Company Directory app env=%s", settings.app_env)
+    if settings.auto_create_tables:
+        Base.metadata.create_all(bind=engine)
+    if settings.auto_migrate:
+        migrate_companies_table(engine)
     try:
         from .ch_urls import normalize_stored_ch_urls_to_canonical
 
-        n_ch = normalize_stored_ch_urls_to_canonical()
-        if n_ch:
-            _log.info("Saved canonical Companies House URLs for %s companies", n_ch)
+        if settings.auto_migrate:
+            n_ch = normalize_stored_ch_urls_to_canonical()
+            if n_ch:
+                _log.info("Saved canonical Companies House URLs for %s companies", n_ch)
     except Exception:
         _log.exception("Companies House URL normalization failed")
-    if os.environ.get("AUTO_ENRICH_COMPANIES", "1").lower() not in (
-        "0",
-        "false",
-        "no",
-        "off",
-    ):
+    if settings.auto_enrich_companies:
         threading.Thread(
             target=_auto_enrich_background,
             name="company-auto-enrich",
@@ -86,6 +86,13 @@ def _ctx(request: Request, **extra):
     """Build the shared Jinja template context for every page."""
     extra.setdefault("nav", "")
     return {"request": request, **extra}
+
+
+@app.get("/healthz")
+def healthz(db: Session = Depends(get_db)):
+    """Basic deployment health probe covering app and database reachability."""
+    db.execute(select(1))
+    return {"status": "ok", "env": settings.app_env}
 
 
 _CATEGORY_CHOICES = [
@@ -519,12 +526,7 @@ def view_company(
     company = db.get(Company, company_id)
     if not company:
         return RedirectResponse("/companies?msg=notfound", status_code=302)
-    if os.environ.get("AUTO_ENRICH_COMPANIES", "1").lower() not in (
-        "0",
-        "false",
-        "no",
-        "off",
-    ):
+    if settings.auto_enrich_companies:
         try:
             if enrich_company_merge(db, company_id):
                 db.refresh(company)
@@ -741,9 +743,7 @@ def admin_enrich_companies(background_tasks: BackgroundTasks):
     def _job() -> None:
         try:
             n = enrich_all_companies_background(
-                delay_sec=float(
-                    os.environ.get("AUTO_ENRICH_DELAY_SEC", "1.25") or "1.25"
-                )
+                delay_sec=settings.auto_enrich_delay_sec
             )
             _log.info("ADMIN_ENRICH: finished, companies updated this run: %s", n)
         except Exception:

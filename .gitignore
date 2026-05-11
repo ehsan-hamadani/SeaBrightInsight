@@ -2,3 +2,7 @@
 __pycache__/
 *.pyc
 data/*.sqlite3
+.env
+.pytest_cache/
+*.csv
+*.xlsx

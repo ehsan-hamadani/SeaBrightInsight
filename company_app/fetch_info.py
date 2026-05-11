@@ -14,6 +14,7 @@ from urllib.parse import quote, quote_plus, urlparse, urlunparse
 import requests
 
 from .ch_urls import public_companies_house_url
+from .config import settings
 from bs4 import BeautifulSoup
 
 _DEFAULT_CH_BASE = "https://api.company-information.service.gov.uk"
@@ -48,12 +49,7 @@ _PROPERTY_SIC_PREFIXES = ("41", "68", "43")
 
 def _fetch_debug_enabled() -> bool:
     """Return True when fetch debug timing output is enabled by env vars."""
-    return (os.environ.get("FETCH_DEBUG_TIMINGS", "1") or "").strip().lower() in (
-        "1",
-        "true",
-        "yes",
-        "on",
-    )
+    return settings.fetch_debug_timings
 
 
 def _dbg(label: str, t0: float, extra: str = "") -> None:

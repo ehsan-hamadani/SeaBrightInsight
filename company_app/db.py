@@ -1,19 +1,23 @@
-"""SQLite database engine and session factory."""
-
-from pathlib import Path
+"""Database engine and session factory."""
 
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
-_REPO_ROOT = Path(__file__).resolve().parent.parent
-DB_PATH = _REPO_ROOT / "data" / "companies.sqlite3"
-DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+from .config import settings, sqlite_file_path
 
-DATABASE_URL = f"sqlite:///{DB_PATH.as_posix()}"
+_sqlite_file = sqlite_file_path(settings.resolved_database_url)
+if _sqlite_file is not None:
+    _sqlite_file.parent.mkdir(parents=True, exist_ok=True)
+
+DATABASE_URL = settings.resolved_database_url
+CONNECT_ARGS = (
+    {"check_same_thread": False} if DATABASE_URL.startswith("sqlite:///") else {}
+)
 
 engine = create_engine(
     DATABASE_URL,
-    connect_args={"check_same_thread": False},
+    connect_args=CONNECT_ARGS,
+    pool_pre_ping=True,
     echo=False,
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -96,7 +100,7 @@ def migrate_companies_table(engine) -> None:
 def get_db():
     """FastAPI dependency: yield a database session and close it after use."""
     global _MIGRATED_ONCE
-    if not _MIGRATED_ONCE:
+    if settings.auto_migrate and not _MIGRATED_ONCE:
         try:
             migrate_companies_table(engine)
         finally:
