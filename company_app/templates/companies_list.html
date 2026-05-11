@@ -1,0 +1,381 @@
+{% extends "base.html" %}
+{% block title %}Companies · Company Directory{% endblock %}
+{% block content %}
+{% if msg %}
+<div class="mb-6 rounded-xl border px-4 py-3 text-sm
+  {% if 'notfound' in msg or 'missing' in msg %}border-amber-200 bg-amber-50 text-amber-900
+  {% elif 'deleted' in msg %}border-red-200 bg-red-50 text-red-900
+  {% else %}border-emerald-200 bg-emerald-50 text-emerald-900{% endif %}">
+  {% if msg == 'saved' %}Changes saved.
+  {% elif msg == 'created' %}Company created.
+  {% elif msg == 'deleted' %}Company removed.
+  {% elif msg == 'notfound' %}Record not found.
+  {% elif msg == 'import_done' %}Market research import: {{ import_created or 0 }} created, {{ import_updated or 0 }} updated.
+  {% elif msg == 'directors_done' %}Directors import: {{ directors_added or 0 }} new director rows added (duplicates skipped).
+  {% elif msg == 'missing_csv' %}Market Research List.csv not found in project root.
+  {% elif msg == 'missing_directors_csv' %}No directors CSV found (market_research_directors.csv).
+  {% elif msg == 'enrich_started' %}Background update started. Refresh shortly to see changes.
+  {% elif msg == 'flags_saved' %}Include / Connected updated.
+  {% else %}{{ msg }}{% endif %}
+</div>
+{% endif %}
+
+<form method="get" action="/companies" class="mb-6 flex flex-col gap-3 max-w-4xl">
+  <div class="flex flex-row gap-3 sm:gap-4 items-end w-full">
+    <div class="flex-1 min-w-0">
+      <label for="search-q" class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1.5">Search</label>
+      <input id="search-q" type="search" name="q" value="{{ search_q }}" placeholder="Name, category, number, email…"
+        class="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm shadow-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none" />
+    </div>
+    <div class="w-44 sm:w-60 shrink-0">
+      <label for="category-filter" class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1.5">Category</label>
+      <select name="category" id="category-filter"
+        class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm shadow-sm bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none">
+        <option value="">All categories</option>
+        {% for cat in categories %}
+        <option value="{{ cat }}" {% if cat == selected_category %}selected{% endif %}>{{ cat }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+  <div class="flex flex-wrap gap-2 items-center">
+    <input type="hidden" name="sort" value="{{ sort_col }}" />
+    <input type="hidden" name="dir" value="{{ sort_dir }}" />
+    <button type="submit" class="px-5 py-2.5 rounded-lg bg-slate-800 text-white text-sm font-medium hover:bg-slate-900">Apply</button>
+    {% if search_q or selected_category %}<a href="/companies" class="px-4 py-2.5 text-sm text-slate-600 hover:text-slate-900">Clear</a>{% endif %}
+  </div>
+</form>
+
+{% if not companies %}
+<div class="rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center">
+  {% if total_companies == 0 %}
+  <p class="text-slate-500 mb-4">No companies yet.</p>
+  <p class="text-sm text-slate-400 mb-6">Add a company with name and URL to get started.</p>
+  <a href="/companies/new" class="text-brand-600 font-medium hover:underline">New company</a>
+  {% else %}
+  <p class="text-slate-500 mb-4">No companies match your search or category.</p>
+  <a href="/companies" class="text-brand-600 font-medium hover:underline">Clear filters</a>
+  {% endif %}
+</div>
+{% else %}
+<div class="rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+  <div class="w-full min-w-0">
+    <table id="companies-data-table" class="companies-data-table w-full min-w-0 max-w-full text-xs sm:text-sm text-left table-fixed border-separate border-spacing-0">
+      <colgroup id="companies-table-colgroup">
+        <col data-col-i="0" style="width:5%" />
+        <col data-col-i="1" style="width:16%" />
+        <col data-col-i="2" style="width:8%" />
+        <col data-col-i="3" style="width:8%" />
+        <col data-col-i="4" style="width:12%" />
+        <col data-col-i="5" style="width:11%" />
+        <col data-col-i="6" style="width:13%" />
+        <col data-col-i="7" style="width:5%" />
+        <col data-col-i="8" style="width:8%" />
+        <col data-col-i="9" style="width:8%" />
+        <col data-col-i="10" style="width:6%" />
+      </colgroup>
+      <thead>
+        <tr>
+          <th scope="col" class="companies-th relative px-2 py-3 pr-3 text-left align-top min-w-0" title="Primary key (row id)">
+            <a href="/companies?{{ sort_qs.id }}" class="inline-flex items-center gap-0.5 max-w-full leading-tight whitespace-normal text-inherit hover:text-brand-900 hover:underline decoration-slate-400/80">ID{% if sort_col == 'id' %}<span class="tabular-nums shrink-0 text-brand-700" aria-hidden="true">{% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
+            <span class="col-resize-handle" data-resize-after="0" title="Drag to resize column"></span>
+          </th>
+          <th scope="col" class="companies-th relative px-2 py-3 pr-3 text-left align-top min-w-0">
+            <a href="/companies?{{ sort_qs.company }}" class="inline-flex items-center gap-0.5 max-w-full leading-tight whitespace-normal text-inherit hover:text-brand-900 hover:underline decoration-slate-400/80">Company{% if sort_col == 'company' %}<span class="tabular-nums shrink-0 text-brand-700" aria-hidden="true">{% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
+            <span class="col-resize-handle" data-resize-after="1" title="Drag to resize column"></span>
+          </th>
+          <th scope="col" class="companies-th relative px-2 py-3 pr-3 text-left align-top min-w-0">
+            <a href="/companies?{{ sort_qs.company_number }}" class="inline-flex items-center gap-0.5 max-w-full leading-tight whitespace-normal text-inherit hover:text-brand-900 hover:underline decoration-slate-400/80">Company Number{% if sort_col == 'company_number' %}<span class="tabular-nums shrink-0 text-brand-700" aria-hidden="true">{% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
+            <span class="col-resize-handle" data-resize-after="2" title="Drag to resize column"></span>
+          </th>
+          <th scope="col" class="companies-th relative px-2 py-3 pr-3 text-left align-top min-w-0">
+            <a href="/companies?{{ sort_qs.category }}" class="inline-flex items-center gap-0.5 max-w-full leading-tight whitespace-normal text-inherit hover:text-brand-900 hover:underline decoration-slate-400/80">Category{% if sort_col == 'category' %}<span class="tabular-nums shrink-0 text-brand-700" aria-hidden="true">{% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
+            <span class="col-resize-handle" data-resize-after="3" title="Drag to resize column"></span>
+          </th>
+          <th scope="col" class="companies-th relative px-2 py-3 pr-3 text-left align-top min-w-0">
+            <a href="/companies?{{ sort_qs.stage }}" class="inline-flex items-center gap-0.5 max-w-full leading-tight whitespace-normal text-inherit hover:text-brand-900 hover:underline decoration-slate-400/80">Stage{% if sort_col == 'stage' %}<span class="tabular-nums shrink-0 text-brand-700" aria-hidden="true">{% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
+            <span class="col-resize-handle" data-resize-after="4" title="Drag to resize column"></span>
+          </th>
+          <th scope="col" class="companies-th relative px-2 py-3 pr-3 text-left align-top min-w-0">
+            <a href="/companies?{{ sort_qs.phone }}" class="inline-flex items-center gap-0.5 max-w-full leading-tight whitespace-normal text-inherit hover:text-brand-900 hover:underline decoration-slate-400/80">Phone{% if sort_col == 'phone' %}<span class="tabular-nums shrink-0 text-brand-700" aria-hidden="true">{% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
+            <span class="col-resize-handle" data-resize-after="5" title="Drag to resize column"></span>
+          </th>
+          <th scope="col" class="companies-th relative px-2 py-3 pr-3 text-left align-top min-w-0">
+            <a href="/companies?{{ sort_qs.email }}" class="inline-flex items-center gap-0.5 max-w-full leading-tight whitespace-normal text-inherit hover:text-brand-900 hover:underline decoration-slate-400/80">Email{% if sort_col == 'email' %}<span class="tabular-nums shrink-0 text-brand-700" aria-hidden="true">{% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
+            <span class="col-resize-handle" data-resize-after="6" title="Drag to resize column"></span>
+          </th>
+          <th scope="col" class="companies-th relative px-2 py-3 pr-3 text-left align-top min-w-0">
+            <a href="/companies?{{ sort_qs.directors }}" class="inline-flex items-center gap-0.5 max-w-full leading-tight whitespace-normal text-inherit hover:text-brand-900 hover:underline decoration-slate-400/80">No. Directors{% if sort_col == 'directors' %}<span class="tabular-nums shrink-0 text-brand-700" aria-hidden="true">{% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
+            <span class="col-resize-handle" data-resize-after="7" title="Drag to resize column"></span>
+          </th>
+          <th scope="col" class="companies-th relative px-2 py-3 pr-3 text-left align-top min-w-0">
+            <a href="/companies?{{ sort_qs.include }}" class="inline-flex items-center gap-0.5 max-w-full leading-tight whitespace-normal text-inherit hover:text-brand-900 hover:underline decoration-slate-400/80">Include{% if sort_col == 'include' %}<span class="tabular-nums shrink-0 text-brand-700" aria-hidden="true">{% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
+            <span class="col-resize-handle" data-resize-after="8" title="Drag to resize column"></span>
+          </th>
+          <th scope="col" class="companies-th relative px-2 py-3 pr-3 text-left align-top min-w-0">
+            <a href="/companies?{{ sort_qs.connected }}" class="inline-flex items-center gap-0.5 max-w-full leading-tight whitespace-normal text-inherit hover:text-brand-900 hover:underline decoration-slate-400/80">Connected{% if sort_col == 'connected' %}<span class="tabular-nums shrink-0 text-brand-700" aria-hidden="true">{% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
+            <span class="col-resize-handle" data-resize-after="9" title="Drag to resize column"></span>
+          </th>
+          <th scope="col" class="companies-th relative px-2 py-3 pr-3 text-left align-top min-w-0">
+            <a href="/companies?{{ sort_qs.moreinfo }}" class="inline-flex items-center gap-0.5 max-w-full leading-tight whitespace-normal text-inherit hover:text-brand-900 hover:underline decoration-slate-400/80">More info{% if sort_col == 'moreinfo' %}<span class="tabular-nums shrink-0 text-brand-700" aria-hidden="true">{% if sort_dir == 'asc' %}↑{% else %}↓{% endif %}</span>{% endif %}</a>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in companies %}
+        <tr class="group border-l-2 border-transparent transition-colors duration-150 odd:bg-white even:bg-slate-50/55 hover:bg-brand-50/90 hover:border-brand-500">
+          <td class="px-2 py-3 align-top whitespace-nowrap tabular-nums font-mono text-xs text-slate-800">
+            <a href="/companies/{{ c.id }}" class="font-semibold text-brand-700 hover:text-brand-600 hover:underline" title="Company id {{ c.id }}">{{ c.id }}</a>
+          </td>
+          <td class="px-2 py-3 align-top min-w-0">
+            <form id="list-flags-{{ c.id }}" method="post" action="/companies/{{ c.id }}/list-flags" class="hidden"></form>
+            <input form="list-flags-{{ c.id }}" type="hidden" name="q" value="{{ search_q or '' }}" />
+            <input form="list-flags-{{ c.id }}" type="hidden" name="category" value="{{ selected_category or '' }}" />
+            <input form="list-flags-{{ c.id }}" type="hidden" name="sort" value="{{ sort_col }}" />
+            <input form="list-flags-{{ c.id }}" type="hidden" name="dir" value="{{ sort_dir }}" />
+            <div class="min-w-0 overflow-hidden">
+            {% set u = (c.company_url or '')|trim %}
+            {% if u %}
+              {% if u.startswith('http://') or u.startswith('https://') %}
+                {% set href_u = u %}
+              {% else %}
+                {% set href_u = 'https://' ~ u %}
+              {% endif %}
+            <a href="{{ href_u }}" target="_blank" rel="noopener noreferrer" class="font-semibold text-brand-600 underline decoration-brand-500/35 underline-offset-2 hover:text-brand-700 hover:decoration-brand-600 break-words">{{ c.company_name }}</a>
+            {% else %}
+            <a href="/companies/{{ c.id }}" class="font-semibold text-brand-600 underline decoration-brand-500/35 underline-offset-2 hover:text-brand-700 hover:decoration-brand-600 break-words">{{ c.company_name }}</a>
+            {% endif %}
+            {% if c.company_description %}
+            <p class="text-slate-500 text-xs mt-1 line-clamp-2 break-words">{{ c.company_description }}</p>
+            {% endif %}
+            </div>
+          </td>
+          <td class="px-2 py-3 font-mono text-xs align-top min-w-0" title="{{ c.company_house_number or '' }}">
+            {% set ch_href = c|ch_registry_link %}
+            {% if ch_href %}
+            <a href="{{ ch_href }}" target="_blank" rel="noopener noreferrer" class="text-brand-600 hover:underline block truncate">{{ c.company_house_number or 'CH' }}</a>
+            {% else %}<span class="text-slate-600">—</span>{% endif %}
+          </td>
+          <td class="px-2 py-3 text-slate-600 align-top min-w-0"><span class="break-words">{{ c.company_area or '—' }}</span></td>
+          <td class="px-2 py-3 align-top min-w-0">
+            {% set st = c.pipeline_stage or 'New Lead' %}
+            {% if st in ['Won', 'Active'] %}
+              {% set st_cls = 'border-emerald-300 bg-emerald-50 text-emerald-800' %}
+            {% elif st in ['On Hold', 'Closed Lost'] %}
+              {% set st_cls = 'border-red-300 bg-red-50 text-red-800' %}
+            {% elif st in ['Proposal Sent', 'Negotiation', 'Onboarding', 'Discovery', 'Contacted'] %}
+              {% set st_cls = 'border-amber-300 bg-amber-50 text-amber-800' %}
+            {% else %}
+              {% set st_cls = 'border-slate-300 bg-slate-50 text-slate-700' %}
+            {% endif %}
+            <span class="inline-flex items-center rounded-md border px-2 py-1 text-[11px] font-medium leading-tight {{ st_cls }}">{{ st }}</span>
+          </td>
+          <td class="px-2 py-3 align-top min-w-0 text-slate-600" title="{{ c.company_telephone or '' }}">{{ c.company_telephone|phone_cell }}</td>
+          <td class="px-2 py-3 text-slate-600 align-top min-w-0 overflow-hidden" title="{{ c.company_email or '' }}">
+            {% if c.company_email %}
+            <a href="mailto:{{ c.company_email }}" class="text-brand-600 hover:underline block truncate">{{ c.company_email }}</a>
+            {% else %}—{% endif %}
+          </td>
+          <td class="px-2 py-3 align-top text-center tabular-nums">
+            {% set nd = director_counts.get(c.id, 0) %}
+            <a href="/companies/{{ c.id }}#directors" class="font-medium text-brand-600 hover:text-brand-700 hover:underline" title="Open director details">{{ nd }}</a>
+          </td>
+          <td class="px-2 py-3 align-top min-w-0">
+            {% set inc = (c.include_flag or '')|trim|lower %}
+            <div class="flex flex-row flex-wrap items-center gap-x-2 gap-y-1">
+              <label class="inline-flex items-center cursor-pointer select-none shrink-0" title="Include">
+                <input type="checkbox" form="list-flags-{{ c.id }}" name="include_yes" value="1"
+                  class="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                  aria-label="Include"
+                  {% if inc in ['yes', 'y', 'true', '1', 'include'] %}checked{% endif %}
+                  onchange="document.getElementById('list-flags-{{ c.id }}').requestSubmit()" />
+              </label>
+              {% if inc and inc not in ['yes', 'y', 'true', '1', 'include'] %}
+              <span class="text-[10px] text-amber-700 leading-tight line-clamp-2 break-words min-w-0" title="{{ c.include_flag }}">Stored: {{ (c.include_flag or '')|trim }}</span>
+              {% endif %}
+            </div>
+          </td>
+          <td class="px-2 py-3 align-top min-w-0">
+            {% set conn = (c.connected or '')|trim|lower %}
+            <div class="flex flex-row flex-wrap items-center gap-x-2 gap-y-1">
+              <label class="inline-flex items-center cursor-pointer select-none shrink-0" title="Connected (full)">
+                <input type="checkbox" form="list-flags-{{ c.id }}" name="connected_full" value="1"
+                  class="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                  aria-label="Connected (full contact)"
+                  {% if conn == 'full' %}checked{% endif %}
+                  onchange="document.getElementById('list-flags-{{ c.id }}').requestSubmit()" />
+              </label>
+              {% if conn and conn != 'full' %}
+              <span class="text-[10px] text-amber-700 leading-tight line-clamp-2 break-words min-w-0" title="{{ c.connected }}">Stored: {{ (c.connected or '')|trim }}</span>
+              {% endif %}
+            </div>
+          </td>
+          <td class="px-2 py-3 align-top min-w-0">
+            <a href="/companies/{{ c.id }}" class="text-brand-600 font-medium text-xs hover:underline whitespace-nowrap">Open</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="px-5 py-3 bg-slate-50/50 border-t border-slate-100 text-xs text-slate-500">
+    {{ companies|length }} compan{{ 'y' if companies|length == 1 else 'ies' }} shown
+  </div>
+</div>
+<style>
+  #companies-data-table {
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  #companies-data-table th,
+  #companies-data-table td {
+    border-right: 1px solid rgb(226 232 240);
+    border-bottom: 1px solid rgb(226 232 240);
+  }
+  #companies-data-table th:last-child,
+  #companies-data-table td:last-child {
+    border-right: 0;
+  }
+  #companies-data-table tbody tr:last-child td {
+    border-bottom: 0;
+  }
+  /* Sticky header below app bar (h-12 logo + py-3.5 padding ≈ 5rem); solid bg required for overlap */
+  #companies-data-table thead th.companies-th {
+    position: sticky;
+    top: 5rem;
+    z-index: 30;
+    background-color: rgb(226 232 240);
+    color: rgb(15 23 42);
+    font-weight: 700;
+    font-size: 0.6875rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border-bottom: 2px solid rgb(148 163 184);
+    box-shadow: 0 4px 14px -6px rgba(15, 23, 42, 0.2);
+  }
+  @media (min-width: 640px) {
+    #companies-data-table thead th.companies-th {
+      font-size: 0.75rem;
+    }
+  }
+  #companies-data-table thead th.companies-th .col-resize-handle {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 6px;
+    cursor: col-resize;
+    z-index: 35;
+    user-select: none;
+    touch-action: none;
+  }
+  #companies-data-table thead th.companies-th .col-resize-handle:hover {
+    background: rgba(79, 107, 237, 0.18);
+  }
+  body.companies-col-dragging {
+    cursor: col-resize !important;
+    user-select: none;
+  }
+</style>
+<script>
+(function () {
+  var table = document.getElementById('companies-data-table');
+  var colgroup = document.getElementById('companies-table-colgroup');
+  if (!table || !colgroup) return;
+  var cols = colgroup.querySelectorAll('col');
+  var KEY = 'companiesTableColWidthsPct';
+  var DEFAULTS = [5, 16, 8, 8, 12, 11, 13, 5, 8, 8, 6];
+  function clamp(n, lo, hi) { return Math.min(hi, Math.max(lo, n)); }
+  function readWidths() {
+    try {
+      var raw = localStorage.getItem(KEY);
+      if (!raw) return null;
+      var arr = JSON.parse(raw);
+      if (!Array.isArray(arr) || arr.length !== cols.length) return null;
+      var s = 0;
+      for (var i = 0; i < arr.length; i++) {
+        var x = Number(arr[i]);
+        if (!isFinite(x) || x < 2) return null;
+        s += x;
+      }
+      if (Math.abs(s - 100) > 0.5) return null;
+      return arr;
+    } catch (e) { return null; }
+  }
+  function applyPct(w) {
+    for (var i = 0; i < cols.length; i++) {
+      cols[i].style.width = w[i].toFixed(2) + '%';
+    }
+  }
+  var initial = readWidths();
+  if (initial) applyPct(initial);
+  else applyPct(DEFAULTS.slice());
+
+  var handles = table.querySelectorAll('.col-resize-handle');
+  handles.forEach(function (handle) {
+    handle.addEventListener('mousedown', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var idx = parseInt(handle.getAttribute('data-resize-after'), 10);
+      if (Number.isNaN(idx) || idx < 0 || idx >= cols.length - 1) return;
+      var rect0 = table.getBoundingClientRect();
+      var w = [];
+      for (var i = 0; i < cols.length; i++) {
+        var cw = cols[i].style.width;
+        if (cw && cw.indexOf('%') > -1) w.push(parseFloat(cw));
+        else {
+          var d = parseFloat(window.getComputedStyle(cols[i]).width) || 1;
+          w.push((d / rect0.width) * 100);
+        }
+      }
+      var sum = w.reduce(function (a, b) { return a + b; }, 0);
+      if (Math.abs(sum - 100) > 1) {
+        var k0 = 100 / sum;
+        for (var j = 0; j < w.length; j++) w[j] *= k0;
+      }
+      var startX = e.pageX;
+      var startW = w.slice();
+      var MIN = 3;
+      document.body.classList.add('companies-col-dragging');
+      function onMove(ev) {
+        var tw = table.getBoundingClientRect().width;
+        var dx = ev.pageX - startX;
+        var dPct = (dx / tw) * 100;
+        var nw = startW.slice();
+        nw[idx] += dPct;
+        nw[idx + 1] -= dPct;
+        if (nw[idx] < MIN) {
+          var fix = MIN - nw[idx];
+          nw[idx] = MIN;
+          nw[idx + 1] -= fix;
+        }
+        if (nw[idx + 1] < MIN) {
+          var fix2 = MIN - nw[idx + 1];
+          nw[idx + 1] = MIN;
+          nw[idx] -= fix2;
+        }
+        var s2 = nw.reduce(function (x, y) { return x + y; }, 0);
+        if (Math.abs(s2 - 100) > 0.01) {
+          var k2 = 100 / s2;
+          for (var t = 0; t < nw.length; t++) nw[t] *= k2;
+        }
+        applyPct(nw);
+      }
+      function onUp() {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        document.body.classList.remove('companies-col-dragging');
+        var out = [];
+        for (var i = 0; i < cols.length; i++) {
+          out.push(parseFloat(cols[i].style.width));
+        }
+        try { localStorage.setItem(KEY, JSON.stringify(out)); } catch (err) {}
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  });
+})();
+</script>
+{% endif %}
+{% endblock %}

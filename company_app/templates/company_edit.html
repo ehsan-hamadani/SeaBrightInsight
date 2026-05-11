@@ -1,0 +1,492 @@
+{% extends "base.html" %}
+
+{% block title %}{% if is_new %}New company{% else %}{{ company.company_name }}{% endif %} · Company Directory{% endblock %}
+
+{% block content %}
+
+{% set c = company if company is not none else prefill %}
+{% set stage_choices = pipeline_stage_choices if pipeline_stage_choices is defined else ['New Lead', 'Contacted', 'Discovery', 'Proposal Sent', 'Negotiation', 'Won', 'Onboarding', 'Active', 'On Hold', 'Closed Lost'] %}
+{% set stage_flow = pipeline_stage_flow if pipeline_stage_flow is defined else [('New Lead', 'Company added as a potential opportunity.'), ('Contacted', 'Initial outreach has been made.'), ('Discovery', 'Needs and goals are being discussed.'), ('Proposal Sent', 'Proposal or plan has been shared.'), ('Negotiation', 'Terms, scope, or pricing are being finalized.'), ('Won', 'Company is now a customer.'), ('Onboarding', 'Kickoff and implementation are in progress.'), ('Active', 'Work is ongoing with the customer.'), ('On Hold', 'Opportunity or project is paused.'), ('Closed Lost', 'Opportunity did not convert.')] %}
+
+<nav class="text-sm text-slate-500 mb-6">
+
+  <a href="/companies" class="hover:text-brand-600">Companies</a>
+
+  <span class="mx-2">/</span>
+
+  <span class="text-slate-800 font-medium">{% if is_new %}New{% else %}Edit{% endif %}</span>
+
+</nav>
+
+
+
+{% if msg %}
+
+<div class="mb-6 rounded-xl border px-4 py-3 text-sm
+
+  {% if msg == 'fetch_noname' or msg == 'fetch_need_url' or msg == 'fetch_failed' or msg == 'fetch_not_property' %}border-amber-200 bg-amber-50 text-amber-900
+
+  {% else %}border-emerald-200 bg-emerald-50 text-emerald-900{% endif %}">
+
+  {% if msg == 'saved' %}Company details saved.
+
+  {% elif msg == 'created' %}Company created.
+
+  {% elif msg == 'fetched' %}Record updated.
+
+  {% elif msg == 'director_added' or msg == 'key_person_added' %}Key person added.
+
+  {% elif msg == 'director_removed' %}Key person removed.
+
+  {% elif msg == 'fetch_noname' %}Enter a company name.
+
+  {% elif msg == 'fetch_need_url' %}Enter a website URL.
+
+  {% elif msg == 'fetch_not_property' %}Only property-related companies can be fetched. This company was not identified as property business.
+
+  {% elif msg == 'fetch_failed' %}Update could not complete. Try again or check the server log.
+
+  {% else %}{{ msg }}{% endif %}
+
+</div>
+
+{% endif %}
+
+
+
+{% if fetch_warnings %}
+
+<div class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+
+  <p class="font-medium mb-1">Notes</p>
+
+  <ul class="list-disc list-inside space-y-0.5 text-amber-800">
+
+    {% for w in fetch_warnings %}<li>{{ w }}</li>{% endfor %}
+
+  </ul>
+
+</div>
+
+{% endif %}
+
+
+
+{% if not is_new %}
+
+<div class="flex justify-end mb-3">
+
+  <form method="post" action="/companies/{{ company.id }}/delete"
+
+        onsubmit="return confirm('Delete this company and all its directors?');">
+
+    <button type="submit" class="text-sm text-red-600 hover:text-red-700 font-medium px-2 py-1 rounded hover:bg-red-50">Delete company</button>
+
+  </form>
+
+</div>
+
+{% endif %}
+
+
+
+{% if is_new %}
+
+<form method="post" action="/companies/new" class="space-y-10">
+
+{% else %}
+
+<form method="post" action="/companies/{{ company.id }}" class="space-y-10">
+
+{% endif %}
+
+
+
+  {% if is_new and prefill_directors %}
+
+  <textarea name="directors_json" class="hidden" aria-hidden="true">{{ prefill_directors | tojson }}</textarea>
+
+  {% endif %}
+
+
+
+  <div class="rounded-2xl border border-slate-200/80 bg-white shadow-sm overflow-hidden">
+
+    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/80">
+
+      <h2 class="text-lg font-bold text-slate-900">Company properties</h2>
+
+    </div>
+
+    <div class="p-6 grid grid-cols-1 gap-4 max-w-5xl">
+
+      <section class="rounded-xl border border-slate-300 bg-slate-50/70 p-4 sm:p-5">
+        <h3 class="text-sm font-semibold text-slate-800 mb-4">Basic details</h3>
+        <div class="grid grid-cols-1 gap-4">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1.5">Company name</label>
+            <input name="company_name" required value="{{ c.company_name if c else '' }}"
+              class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1.5">Company URL</label>
+            <input name="company_url" type="text" value="{{ c.company_url if c else '' }}" placeholder="https://example.co.uk"
+              class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 outline-none" />
+          </div>
+          <div class="flex flex-wrap items-center gap-3">
+            {% if is_new %}
+            <button type="submit" formaction="/companies/new/fetch" formmethod="post" formnovalidate data-fetch-trigger
+              class="inline-flex items-center px-4 py-2.5 rounded-lg bg-slate-800 text-white text-sm font-semibold hover:bg-slate-900 shadow-sm">
+              Fetch
+            </button>
+            {% else %}
+            <button type="submit" formaction="/companies/{{ company.id }}/fetch" formmethod="post" formnovalidate data-fetch-trigger
+              class="inline-flex items-center px-4 py-2.5 rounded-lg bg-slate-800 text-white text-sm font-semibold hover:bg-slate-900 shadow-sm">
+              Fetch
+            </button>
+            {% endif %}
+          </div>
+          <div id="fetch-progress" class="hidden rounded-lg border border-brand-200 bg-brand-50 px-3 py-3">
+            <p class="text-xs font-semibold uppercase tracking-wide text-brand-700 mb-2">Fetching details…</p>
+            <div class="h-2 w-full overflow-hidden rounded bg-brand-100">
+              <div class="h-full w-full origin-left bg-brand-600 animate-pulse"></div>
+            </div>
+            <p class="mt-2 text-xs text-brand-800">Scraping website, running local LLM, and updating key people.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="rounded-xl border border-slate-300 bg-white p-4 sm:p-5">
+        <h3 class="text-sm font-semibold text-slate-800 mb-4">Pipeline workflow stage</h3>
+        {% set current_stage = ((c and c.pipeline_stage) or stage_choices[0]) %}
+        {% set ns = namespace(cur_idx=1) %}
+        {% for st in stage_choices %}
+          {% if st == current_stage %}{% set ns.cur_idx = loop.index %}{% endif %}
+        {% endfor %}
+        {% set is_late_stage = current_stage in ['On Hold', 'Closed Lost'] %}
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1.5">Current stage</label>
+            {% if current_stage in ['Won', 'Active'] %}
+              {% set cur_stage_cls = 'border-emerald-300 bg-emerald-50 text-emerald-800' %}
+            {% elif current_stage in ['On Hold', 'Closed Lost'] %}
+              {% set cur_stage_cls = 'border-red-300 bg-red-50 text-red-800' %}
+            {% elif current_stage in ['Proposal Sent', 'Negotiation', 'Onboarding', 'Discovery', 'Contacted'] %}
+              {% set cur_stage_cls = 'border-amber-300 bg-amber-50 text-amber-800' %}
+            {% else %}
+              {% set cur_stage_cls = 'border-slate-300 bg-slate-50 text-slate-700' %}
+            {% endif %}
+            <div class="mb-2">
+              <span id="current-stage-badge" class="inline-flex items-center rounded-md border px-2 py-1 text-xs font-semibold {{ cur_stage_cls }}">{{ current_stage }}</span>
+            </div>
+            <select name="pipeline_stage"
+              id="pipeline-stage-select"
+              class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 outline-none">
+              {% for st in stage_choices %}
+              <option value="{{ st }}" {% if ((c and c.pipeline_stage) or stage_choices[0]) == st %}selected{% endif %}>{{ st }}</option>
+              {% endfor %}
+            </select>
+            <p class="mt-1 text-[11px] text-slate-500">Stage is saved when you click <strong class="font-semibold">Save changes</strong>.</p>
+          </div>
+          <div class="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 mb-2">Stage flow</p>
+            <ol class="space-y-2 text-xs text-slate-700">
+              {% for st, detail in stage_flow %}
+              <li class="flex items-start gap-2">
+                <span class="mt-0.5 inline-flex h-3.5 w-3.5 shrink-0 rounded-full border
+                  {% if loop.index < ns.cur_idx %}
+                    border-emerald-700 bg-emerald-500
+                  {% elif loop.index == ns.cur_idx and is_late_stage %}
+                    border-red-700 bg-red-500
+                  {% elif loop.index == ns.cur_idx %}
+                    border-amber-700 bg-amber-500
+                  {% else %}
+                    border-slate-400 bg-slate-200
+                  {% endif %}"></span>
+                <span>
+                  <span class="font-medium text-slate-800">{{ loop.index }}. {{ st }}</span>
+                  <span class="text-slate-500">- {{ detail }}</span>
+                </span>
+              </li>
+              {% endfor %}
+            </ol>
+            <div class="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-slate-600">
+              <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-emerald-500 border border-emerald-700"></span>Completed</span>
+              <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-amber-500 border border-amber-700"></span>In progress</span>
+              <span class="inline-flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-full bg-red-500 border border-red-700"></span>Late</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="rounded-xl border border-slate-300 bg-white p-4 sm:p-5">
+        <h3 class="text-sm font-semibold text-slate-800 mb-4">Contact details</h3>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div class="min-w-0">
+            <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1.5">Category</label>
+            <select name="company_area"
+              class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 outline-none">
+              <option value="">Select category</option>
+              {% for cat in category_choices %}
+              <option value="{{ cat }}" {% if (c and c.company_area) == cat %}selected{% endif %}>{{ cat }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="min-w-0">
+            <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1.5">Company telephone</label>
+            <input name="company_telephone" value="{{ (c and c.company_telephone) or '' }}"
+              class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 outline-none" />
+          </div>
+          <div class="min-w-0">
+            <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1.5">Company email</label>
+            <input name="company_email" type="text" value="{{ (c and c.company_email) or '' }}"
+              class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 outline-none" />
+          </div>
+          <div class="lg:col-span-2">
+            <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1.5">Company address</label>
+            <textarea name="company_address" rows="2"
+              class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 outline-none">{{ (c and c.company_address) or '' }}</textarea>
+          </div>
+        </div>
+      </section>
+
+      <section class="rounded-xl border border-slate-300 bg-white p-4 sm:p-5">
+        <h3 class="text-sm font-semibold text-slate-800 mb-4">Registry details</h3>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div class="min-w-0">
+            <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1.5">Company House number</label>
+            <input name="company_house_number" value="{{ (c and c.company_house_number) or '' }}"
+              class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm font-mono focus:ring-2 focus:ring-brand-500 outline-none" />
+          </div>
+          <div class="lg:col-span-2 min-w-0">
+            <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1.5">Company House URL</label>
+            <input name="company_house_url" type="text" value="{{ (c and c.company_house_url) or '' }}"
+              class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 outline-none" />
+          </div>
+        </div>
+      </section>
+
+      <section class="rounded-xl border border-slate-300 bg-white p-4 sm:p-5">
+        <h3 class="text-sm font-semibold text-slate-800 mb-4">Profile and notes</h3>
+        <div class="grid grid-cols-1 gap-4">
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1.5">Company description</label>
+            <textarea name="company_description" rows="4"
+              class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none">{{ (c and c.company_description) or '' }}</textarea>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1.5">Notes</label>
+            <textarea name="company_notes" rows="5" placeholder="Add internal notes about this company..."
+              class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none">{{ (c and c.company_notes) or '' }}</textarea>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <div class="px-6 py-4 bg-slate-50/80 border-t border-slate-100 flex justify-end gap-3">
+
+      <a href="/companies" class="px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-slate-900">Cancel</a>
+
+      <button type="submit" class="px-5 py-2.5 rounded-lg bg-brand-600 text-white text-sm font-semibold hover:bg-brand-700 shadow-sm">
+
+        {% if is_new %}Create company{% else %}Save changes{% endif %}
+
+      </button>
+
+    </div>
+
+  </div>
+
+</form>
+
+
+
+{% if is_new and prefill_directors %}
+
+<div id="directors" class="rounded-2xl border border-slate-200/80 bg-white shadow-sm overflow-hidden mt-10 scroll-mt-24">
+
+  <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/80">
+
+    <h2 class="text-lg font-bold text-slate-900">Directors & Key People</h2>
+
+    <p class="text-sm text-slate-500 mt-1">These rows are saved when you click <strong class="text-slate-700">Create company</strong>.</p>
+
+  </div>
+
+  <ul class="divide-y divide-slate-100 text-sm max-w-4xl">
+
+    {% for d in prefill_directors %}
+
+    <li class="px-6 py-4">
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+
+        <p class="font-medium text-slate-900">{{ d.director_name }}</p>
+        <p class="text-slate-600 text-sm"><span class="text-xs text-slate-500 uppercase tracking-wide font-sans mr-1">Role</span>{{ d.role or 'Director' }}</p>
+
+      </div>
+
+    </li>
+
+    {% endfor %}
+
+  </ul>
+
+</div>
+
+{% endif %}
+
+
+
+{% if not is_new %}
+
+<div id="directors" class="rounded-2xl border border-slate-200/80 bg-white shadow-sm overflow-hidden mt-10 scroll-mt-24">
+
+  <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/80">
+
+    <h2 class="text-lg font-bold text-slate-900">Directors & Key People</h2>
+
+    <p class="text-sm text-slate-500 mt-1">Name and role are shown in fixed columns.</p>
+
+  </div>
+
+  {% if directors %}
+
+  <ul class="divide-y divide-slate-100 text-sm max-w-4xl">
+
+    {% for d in directors %}
+
+    <li class="px-6 py-4">
+
+      <div class="grid grid-cols-1 sm:grid-cols-[1.4fr_1fr_auto] gap-3 sm:items-center sm:gap-4">
+
+        <p class="font-medium text-slate-900 min-w-0">{{ d.director_name }}</p>
+
+        <p class="text-slate-600 text-sm min-w-0">{{ d.role or 'Director' }}</p>
+        {% if d.phone or d.email %}
+        <p class="sm:col-span-2 text-xs text-slate-500">
+          {% if d.phone %}<span class="mr-3">Phone: {{ d.phone }}</span>{% endif %}
+          {% if d.email %}<span>Email: {{ d.email }}</span>{% endif %}
+        </p>
+        {% endif %}
+        {% if d.interaction_notes %}
+        <p class="sm:col-span-2 text-xs text-slate-700 bg-slate-50 border border-slate-200 rounded-md px-2.5 py-2 leading-relaxed">
+          <span class="font-semibold text-slate-600 uppercase tracking-wide text-[10px] mr-1">Interaction history:</span>
+          {{ d.interaction_notes }}
+        </p>
+        {% endif %}
+
+        <form method="post" action="/companies/{{ company.id }}/directors/{{ d.id }}/delete"
+
+              class="shrink-0 text-right"
+
+            onsubmit="return confirm('Remove this director?');">
+
+          <button type="submit" class="text-xs text-red-600 hover:underline font-medium">Remove</button>
+
+        </form>
+
+      </div>
+
+    </li>
+
+    {% endfor %}
+
+  </ul>
+
+  {% else %}
+
+  <p class="px-6 py-8 text-sm text-slate-500">No key people yet. Add one below.</p>
+
+  {% endif %}
+
+
+
+  <div class="px-6 py-5 border-t border-slate-100 bg-slate-50/50">
+
+    <h3 class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-3">Add key people</h3>
+
+    <form method="post" action="/companies/{{ company.id }}/directors" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 items-end">
+
+      <div class="min-w-0">
+
+        <label class="block text-[11px] uppercase tracking-wide text-slate-500 mb-1">Name</label>
+
+        <input name="director_name" required placeholder="Full name"
+
+          class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 outline-none" />
+
+      </div>
+
+      <div class="min-w-0">
+
+        <label class="block text-[11px] uppercase tracking-wide text-slate-500 mb-1">Role</label>
+        <input name="role" type="text" placeholder="Director / Manager / Owner"
+          class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 outline-none" />
+      </div>
+      <div class="min-w-0">
+        <label class="block text-[11px] uppercase tracking-wide text-slate-500 mb-1">Phone (optional)</label>
+        <input name="phone" type="text" placeholder="+44..."
+          class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 outline-none" />
+      </div>
+      <div class="min-w-0">
+        <label class="block text-[11px] uppercase tracking-wide text-slate-500 mb-1">Email (optional)</label>
+        <input name="email" type="email" placeholder="name@company.com"
+          class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 outline-none" />
+      </div>
+      <div class="min-w-0">
+        <label class="block text-[11px] uppercase tracking-wide text-slate-500 mb-1">Interaction history note</label>
+        <textarea name="interaction_notes" rows="1" placeholder="e.g. Spoke 05/05, follow-up next week"
+          class="w-full min-h-[2.75rem] resize-y rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 outline-none"></textarea>
+      </div>
+      <button type="submit" class="w-full sm:w-auto px-4 py-2.5 rounded-lg bg-slate-900 text-white text-sm font-medium hover:bg-slate-800 shrink-0">Add key person</button>
+
+    </form>
+
+  </div>
+
+</div>
+
+{% endif %}
+
+<script>
+(function () {
+  var progress = document.getElementById('fetch-progress');
+  if (!progress) return;
+  var triggers = document.querySelectorAll('[data-fetch-trigger]');
+  if (!triggers.length) return;
+  triggers.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      progress.classList.remove('hidden');
+      progress.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      triggers.forEach(function (b) {
+        b.setAttribute('disabled', 'disabled');
+        b.classList.add('opacity-70', 'cursor-not-allowed');
+      });
+    });
+  });
+
+  var stageSelect = document.getElementById('pipeline-stage-select');
+  var stageBadge = document.getElementById('current-stage-badge');
+  if (stageSelect && stageBadge) {
+    function stageClass(stage) {
+      if (['Won', 'Active'].indexOf(stage) >= 0) return 'border-emerald-300 bg-emerald-50 text-emerald-800';
+      if (['On Hold', 'Closed Lost'].indexOf(stage) >= 0) return 'border-red-300 bg-red-50 text-red-800';
+      if (['Proposal Sent', 'Negotiation', 'Onboarding', 'Discovery', 'Contacted'].indexOf(stage) >= 0) return 'border-amber-300 bg-amber-50 text-amber-800';
+      return 'border-slate-300 bg-slate-50 text-slate-700';
+    }
+    function renderStageBadge() {
+      var v = stageSelect.value || 'New Lead';
+      stageBadge.textContent = v;
+      stageBadge.className = 'inline-flex items-center rounded-md border px-2 py-1 text-xs font-semibold ' + stageClass(v);
+    }
+    stageSelect.addEventListener('change', renderStageBadge);
+    renderStageBadge();
+  }
+})();
+</script>
+
+{% endblock %}
+
+

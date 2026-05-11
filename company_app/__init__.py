@@ -1,0 +1,1 @@
+"""Company directory web application."""

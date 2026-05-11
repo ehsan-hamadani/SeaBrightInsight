@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}Company Directory{% endblock %}</title>
+  <link rel="icon" href="/static/logo.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['"DM Sans"', 'system-ui', 'sans-serif'] },
+          colors: {
+            brand: { 50: '#f0f4ff', 100: '#e0e9ff', 500: '#4f6bed', 600: '#3d56d9', 700: '#2f45b8', 900: '#1c2d5c' },
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    body { font-feature-settings: "kern" 1, "liga" 1; }
+    details.menu > summary { list-style: none; }
+    details.menu > summary::-webkit-details-marker { display: none; }
+    .header-brand-logo { display: block; height: 3.6rem; width: auto; max-width: min(420px, 62vw); object-fit: contain; }
+  </style>
+</head>
+<body class="h-full bg-slate-50 text-slate-900 antialiased">
+  <div class="min-h-full flex flex-col">
+    <header class="sticky top-0 z-40 flex items-center justify-between gap-4 px-4 sm:px-6 py-3.5 bg-white/95 backdrop-blur-md border-b border-slate-200/90 shadow-sm">
+      <div class="min-w-0 flex items-center gap-3">
+        <a href="/companies" class="flex items-center min-w-0 group" aria-label="SeaBright Insight - Company Directory">
+          <img src="/static/seabright-full-logo.png" alt="SeaBright Insight" class="header-brand-logo select-none" decoding="async" />
+        </a>
+      </div>
+      <details class="menu relative shrink-0">
+        <summary class="flex items-center gap-2 cursor-pointer select-none rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 hover:border-slate-300 transition-colors">
+          <span>Menu</span>
+          <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </summary>
+        <nav class="absolute right-0 mt-2 w-56 rounded-xl border border-slate-200/90 bg-white py-1.5 shadow-lg ring-1 ring-black/5">
+          <a href="/companies" class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium {% if nav|default('') in ['list', 'edit'] %}text-brand-700 bg-brand-50{% else %}text-slate-700 hover:bg-slate-50{% endif %}">
+            <svg class="w-5 h-5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+            All companies
+          </a>
+          <a href="/companies/new" class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium {% if nav|default('') == 'new' %}text-brand-700 bg-brand-50{% else %}text-slate-700 hover:bg-slate-50{% endif %}">
+            <svg class="w-5 h-5 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"/></svg>
+            New company
+          </a>
+        </nav>
+      </details>
+    </header>
+    <main class="flex-1 p-6 md:p-10 max-w-[88rem] mx-auto w-full">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+  {% block page_scripts %}{% endblock %}
+</body>
+</html>
