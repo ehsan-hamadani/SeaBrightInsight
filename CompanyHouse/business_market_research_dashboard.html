@@ -1,0 +1,727 @@
+<div id="register-app"></div>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+
+<style>
+  #register-app, #register-app * { box-sizing: border-box; }
+  #register-app {
+    --ink: #14213d;
+    --panel: #f8fafc;
+    --panel-2: #ffffff;
+    --panel-3: #f3f7fb;
+    --hairline: #dfe7ef;
+    --paper: #16324f;
+    --muted: #64748b;
+    --brass: #d28d3b;
+    --teal: #2f9f96;
+    --rust: #e46b63;
+    --red: #c94e56;
+    --green: #5aa96a;
+    --shadow: 0 18px 45px rgba(20, 33, 61, 0.12);
+    --font-display: "Manrope", "Segoe UI", sans-serif;
+    --font-body: "Inter", "Segoe UI", sans-serif;
+    --font-mono: "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    background: linear-gradient(135deg, #f8f3ea 0%, #f5fbff 48%, #eef4ff 100%);
+    color: var(--paper);
+    font-family: var(--font-body);
+    border-radius: 24px;
+    overflow: visible;
+    border: 1px solid rgba(20, 33, 61, 0.08);
+    box-shadow: var(--shadow);
+  }
+  .rg-shell { padding: 0; }
+  .rg-header { padding: 30px 28px 22px; border-bottom: 1px solid var(--hairline); background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%); }
+  .rg-header-main { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .rg-eyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: .16em; color: var(--teal); text-transform: uppercase; margin: 0 0 8px; font-weight: 700; }
+  .rg-title { font-family: var(--font-display); font-size: clamp(30px, 4vw, 46px); line-height: 1.05; margin: 0 0 8px; color: var(--ink); font-weight: 800; }
+  .rg-subtitle { font-size: 14.5px; color: var(--muted); margin: 0; max-width: 860px; line-height: 1.7; }
+  .rg-hero-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .rg-pill-large { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 999px; border: 1px solid #dfe9f2; background: #ffffff; font-family: var(--font-mono); font-size: 11px; color: var(--ink); box-shadow: 0 6px 16px rgba(20,33,61,.06); }
+  .rg-pill-large--primary { border-color: rgba(47,159,150,.28); color: var(--teal); }
+  .rg-pill-large--accent { border-color: rgba(210,141,59,.24); color: var(--brass); }
+  .rg-quick-guide { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+  .rg-guide-card { background: linear-gradient(135deg, #ffffff, #f7fbff); border: 1px solid #e3ebf3; border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; gap: 5px; box-shadow: 0 10px 20px rgba(20,33,61,.04); }
+  .rg-guide-card strong { color: var(--ink); font-size: 13px; font-family: var(--font-display); }
+  .rg-guide-card span { color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+  .rg-banner { margin: 16px 28px 0; padding: 12px 14px; border: 1px solid rgba(47,159,150,.22); border-radius: 16px; font-size: 12.5px; color: var(--ink); display: flex; gap: 10px; align-items: flex-start; background: linear-gradient(90deg, rgba(47,159,150,.08), rgba(210,141,59,.08)); box-shadow: inset 0 1px 0 rgba(255,255,255,.4); }
+  .rg-banner b { color: var(--ink); }
+  .rg-stamp-badge { flex: none; font-family: var(--font-mono); font-size: 10px; letter-spacing: .06em; border: 1px solid var(--teal); color: var(--teal); border-radius: 999px; padding: 2px 8px; transform: rotate(-3deg); white-space: nowrap; background: rgba(255,255,255,.82); }
+  .rg-stamp-badge.live { border-color: var(--brass); color: var(--brass); }
+  .rg-controls { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(140px, 0.7fr) auto auto; gap: 10px; padding: 18px 28px 10px; align-items: center; }
+  .rg-place-wrapper { position: relative; }
+  .rg-place-autocomplete { position: absolute; top: calc(100% + 8px); left: 0; right: 0; background: #fff; border: 1px solid #e6eef6; box-shadow: 0 8px 24px rgba(20,33,61,.06); border-radius: 10px; max-height: 220px; overflow-y: auto; z-index: 1100; display: none; }
+  .rg-place-autocomplete.active { display: block; }
+  .rg-place-option { padding: 9px 12px; cursor: pointer; font-size: 13px; color: var(--ink); border-bottom: 1px solid #f0f3f8; }
+  .rg-place-option:hover, .rg-place-option.selected { background: #f7fbff; }
+  .rg-explore-filters { padding: 0 28px 12px; display: flex; gap: 10px; align-items: center; border-bottom: 1px solid #e9f0f7; }
+  .rg-explore-filters .rg-place-wrapper { flex: 1; max-width: 250px; }
+  .rg-status-dropdown { position: relative; }
+  .rg-status-toggle { display: inline-flex; align-items: center; gap:8px; padding: 10px 12px; border-radius: 10px; border: 1px solid #dfe7ef; background: #fff; color: var(--ink); cursor: pointer; }
+  .rg-status-menu { position: absolute; top: calc(100% + 8px); left: 0; background: #fff; border: 1px solid #e6eef6; box-shadow: 0 8px 24px rgba(20,33,61,.06); border-radius: 10px; padding: 8px; min-width: 220px; z-index: 1200; }
+  .rg-status-menu label { display: flex; align-items: center; gap: 8px; padding: 6px 8px; font-size: 13px; color: var(--ink); }
+  .rg-controls input, .rg-controls select { background: #ffffff; border: 1px solid var(--hairline); color: var(--ink); font-family: var(--font-body); font-size: 13.5px; padding: 10px 12px; border-radius: 12px; min-height: 42px; box-shadow: 0 4px 10px rgba(20,33,61,.04); }
+  .rg-controls input::placeholder { color: #94a3b8; }
+  .rg-controls input:focus, .rg-controls select:focus, .rg-status-btn:focus-visible, .rg-tab:focus-visible, .rg-card:focus-visible, .rg-loadmore:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+  .rg-status-group { grid-column: 1 / -1; display: flex; gap: 7px; flex-wrap: wrap; }
+  .rg-status-btn, .rg-tab, .rg-loadmore, .rg-mini-btn { font-family: var(--font-body); font-size: 11.5px; border-radius: 999px; border: 1px solid var(--hairline); background: #ffffff; color: var(--muted); cursor: pointer; transition: all .2s ease; font-weight: 600; }
+  .rg-status-btn { padding: 8px 11px; }
+  .rg-status-btn.active { background: linear-gradient(135deg, var(--teal), #4bb5c9); color: #ffffff; border-color: transparent; box-shadow: 0 8px 16px rgba(47,159,150,.18); }
+  .rg-export { color: #ffffff; text-decoration: none; font-family: var(--font-body); font-size: 11.5px; border: 1px solid transparent; border-radius: 999px; padding: 10px 12px; text-align: center; background: linear-gradient(135deg, #3868f6, #4ba8ff); box-shadow: 0 8px 16px rgba(56,104,246,.18); font-weight: 700; }
+  .rg-search-btn { padding: 10px 14px; border-radius: 10px; border: none; background: linear-gradient(135deg, #4ba8ff, #2f9f96); color: #fff; font-weight: 700; font-size: 13.5px; cursor: pointer; font-family: var(--font-body); box-shadow: 0 6px 14px rgba(56,104,246,.16); transition: all .2s ease; }
+  .rg-search-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(56,104,246,.24); }
+  .rg-search-btn:active { transform: translateY(0); box-shadow: 0 4px 12px rgba(56,104,246,.16); }
+  .rg-menu-nav { display: flex; gap: 10px; padding: 18px 28px 0; flex-wrap: wrap; }
+  .rg-menu-btn { padding: 10px 14px; border-radius: 999px; border: 1px solid #dfe8f0; background: #ffffff; color: var(--muted); font-weight: 700; font-family: var(--font-body); box-shadow: 0 6px 14px rgba(20,33,61,.04); }
+  .rg-menu-btn.active { background: linear-gradient(135deg, #3868f6, #2f9f96); color: #ffffff; border-color: transparent; }
+  .rg-menu-panel { display: none; }
+  .rg-menu-panel.active { display: block; }
+  .rg-search-card { margin: 16px 28px 0; padding: 16px 18px; border-radius: 18px; background: linear-gradient(135deg, #f8fbff, #f3f7fd); border: 1px solid #e4ebf2; box-shadow: 0 8px 20px rgba(20,33,61,.04); }
+  .rg-search-card h3 { margin: 0 0 6px; font-family: var(--font-display); color: var(--ink); font-size: 18px; }
+  .rg-search-card p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
+  .rg-tabs { display: flex; gap: 8px; flex-wrap: wrap; padding: 12px 28px 14px; border-bottom: 1px solid var(--hairline); background: rgba(255,255,255,.92); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 20; }
+  .rg-tab { padding: 9px 13px; }
+  .rg-tab:hover { transform: translateY(-1px); border-color: rgba(47,159,150,.3); color: var(--ink); }
+  .rg-tab.active { color: #ffffff; background: linear-gradient(135deg, #3868f6, #2f9f96); border-color: transparent; box-shadow: 0 8px 16px rgba(56,104,246,.16); }
+  .rg-panel { display: none; padding: 24px 28px 28px; }
+  .rg-panel.active { display: block; animation: fadeIn .25s ease; }
+  .rg-loading, .rg-empty { padding: 34px 18px; text-align: center; color: var(--muted); font-size: 13px; }
+  .rg-grid { display: grid; gap: 14px; }
+  .rg-kpis { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .rg-cardbox { background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%); border: 1px solid #e5ebf2; border-radius: 18px; padding: 16px; min-width: 0; box-shadow: 0 10px 24px rgba(20,33,61,.06); transition: transform .2s ease, border-color .2s ease; }
+  .rg-cardbox:hover { transform: translateY(-1px); border-color: rgba(47,159,150,.26); }
+  .rg-kpi-label { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .08em; color: var(--muted); text-transform: uppercase; margin-bottom: 7px; }
+  .rg-kpi-value { font-family: var(--font-display); font-size: 26px; line-height: 1.05; color: var(--ink); font-weight: 800; }
+  .rg-kpi-note { font-size: 12px; color: var(--muted); margin-top: 7px; }
+  .rg-eureka { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 14px; }
+  .rg-eureka .rg-cardbox { border-left: 3px solid var(--brass); }
+  .rg-eureka .positive { border-left-color: var(--teal); }
+  .rg-eureka .negative { border-left-color: var(--rust); }
+  .rg-eureka .warning { border-left-color: var(--brass); }
+  .rg-eureka-title { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .08em; color: var(--muted); text-transform: uppercase; }
+  .rg-eureka-value { font-family: var(--font-display); font-size: 21px; margin: 8px 0 6px; color: var(--ink); font-weight: 700; }
+  .rg-eureka-note { font-size: 12.5px; line-height: 1.45; color: var(--muted); }
+  .rg-split { display: grid; grid-template-columns: 1.2fr .8fr; gap: 14px; margin-top: 14px; }
+  .rg-section-title { font-family: var(--font-display); font-size: 19px; margin: 0 0 6px; color: var(--ink); font-weight: 700; }
+  .rg-section-sub { color: var(--muted); margin: 0 0 14px; font-size: 12.5px; line-height: 1.55; }
+  .rg-bars { display: grid; gap: 10px; }
+  .rg-bar-row { display: grid; grid-template-columns: minmax(110px, 1fr) minmax(100px, 2fr) 68px; gap: 10px; align-items: center; font-size: 12px; color: var(--muted); }
+  .rg-bar-label { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--ink); }
+  .rg-bar-track { height: 9px; border-radius: 999px; background: #e9f0f7; overflow: hidden; }
+  .rg-bar-fill { height: 100%; width: 0; border-radius: 999px; background: linear-gradient(90deg, var(--teal), #66cabd); }
+  .rg-bar-fill.risk { background: linear-gradient(90deg, var(--rust), #ff978f); }
+  .rg-chart { width: 100%; min-height: 240px; background: linear-gradient(180deg, #f8fbff, #f2f7fb); border: 1px solid #e4ebf2; border-radius: 14px; padding: 10px; overflow: hidden; }
+  .rg-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .rg-table th { text-align: left; color: var(--muted); font-family: var(--font-mono); font-weight: 500; font-size: 10.5px; letter-spacing: .04em; border-bottom: 1px solid #e7edf3; padding: 8px 6px; }
+  .rg-table td { border-bottom: 1px solid #eef3f8; padding: 9px 6px; vertical-align: top; color: var(--ink); }
+  .rg-table td.num, .rg-table th.num { text-align: right; font-family: var(--font-mono); }
+  .rg-map-layout { display: grid; grid-template-columns: 1fr 320px; gap: 14px; min-height: 640px; }
+  .rg-map-card { position: relative; min-height: 640px; border: 1px solid #e4ebf2; border-radius: 18px; overflow: hidden; background: linear-gradient(135deg, #f7fbff, #ffffff); box-shadow: 0 8px 20px rgba(20,33,61,.05); }
+  #rg-heatmap { height: 100%; min-height: 640px; }
+  .rg-map-tools { position: absolute; z-index: 450; left: 14px; top: 14px; display: flex; gap: 8px; flex-wrap: wrap; max-width: calc(100% - 28px); }
+  .rg-map-tools select { background: rgba(255,255,255,.96); color: var(--ink); border: 1px solid #dfe7ef; border-radius: 10px; padding: 8px; font-size: 12px; box-shadow: 0 6px 16px rgba(20,33,61,.06); }
+  .rg-list-wrap { display: grid; grid-template-columns: 390px 1fr; gap: 14px; }
+  .rg-list { overflow-y: auto; max-height: 640px; border: 1px solid #e4ebf2; border-radius: 16px; background: #ffffff; box-shadow: 0 10px 24px rgba(20,33,61,.05); }
+  .rg-card { display: block; width: 100%; text-align: left; padding: 14px 16px; cursor: pointer; border: none; border-bottom: 1px solid #eef3f8; background: transparent; color: var(--ink); border-left: 3px solid transparent; }
+  .rg-card:hover, .rg-card.selected { background: #f7fbff; }
+  .rg-card.selected { border-left-color: var(--brass); }
+  .rg-card-name { font-size: 14px; font-weight: 700; margin-bottom: 5px; color: var(--ink); }
+  .rg-card-meta { font-family: var(--font-mono); font-size: 11px; color: var(--muted); margin-bottom: 7px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .rg-card-sic { font-size: 12px; color: var(--muted); line-height: 1.35; }
+  .rg-pill { display: inline-block; font-family: var(--font-mono); font-size: 10px; letter-spacing: .04em; padding: 2px 7px; border-radius: 999px; border: 1px solid; }
+  .rg-loadmore { display: block; width: 100%; padding: 13px; background: #f7fbff; border: none; border-top: 1px solid #eef3f8; color: var(--teal); font-weight: 700; }
+  .rg-detail { background: linear-gradient(135deg, #fdf9f0, #f4f8fb); color: #1f2d3d; border-radius: 18px; padding: 18px; min-height: 220px; border: 1px solid #e7ebf0; box-shadow: 0 8px 20px rgba(20,33,61,.05); }
+  .rg-detail h3 { font-family: var(--font-display); font-size: 22px; margin: 0 0 12px; color: var(--ink); font-weight: 800; }
+  .rg-detail-row { font-size: 12.5px; color: #516273; margin-bottom: 5px; }
+  .rg-detail-row b { color: #1f2d3d; font-family: var(--font-mono); font-weight: 600; }
+  .rg-footnote { color: var(--muted); font-size: 11.5px; line-height: 1.45; margin-top: 12px; }
+  .rg-count { font-family: var(--font-mono); color: var(--muted); font-size: 12px; margin: 0 0 12px; }
+  .leaflet-popup-content { color: #1f2d3d; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  @media (max-width: 980px) {
+    .rg-controls { grid-template-columns: 1fr; }
+    .rg-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .rg-eureka, .rg-split, .rg-map-layout, .rg-list-wrap, .rg-quick-guide { grid-template-columns: 1fr; }
+    .rg-map-card, #rg-heatmap { min-height: 460px; }
+  }
+  @media (max-width: 600px) {
+    .rg-header, .rg-panel, .rg-controls, .rg-tabs { padding-left: 18px; padding-right: 18px; }
+    .rg-banner { margin-left: 18px; margin-right: 18px; }
+    .rg-kpis { grid-template-columns: 1fr; }
+    .rg-eureka { grid-template-columns: 1fr; }
+  }
+</style>
+
+<script>
+(function () {
+  const STATUS_CATEGORIES = {
+    "Active": ["Active"],
+    "Active - At Risk": ["Active - Proposal to Strike off", "Live but Receiver Manager on at least one charge"],
+    "Insolvency - Voluntary Arrangement": ["Voluntary Arrangement", "VOLUNTARY ARRANGEMENT / ADMINISTRATIVE RECEIVER", "VOLUNTARY ARRANGEMENT / RECEIVER MANAGER"],
+    "Insolvency - Administration/Receivership": ["In Administration", "In Administration/Administrative Receiver", "In Administration/Receiver Manager", "ADMINISTRATION ORDER", "ADMINISTRATIVE RECEIVER", "RECEIVER MANAGER / ADMINISTRATIVE RECEIVER", "RECEIVERSHIP"],
+    "Liquidation": ["Liquidation"],
+  };
+  const STATUS_TO_CATEGORY = {};
+  Object.entries(STATUS_CATEGORIES).forEach(([cat, raws]) => raws.forEach((r) => { STATUS_TO_CATEGORY[r] = cat; }));
+  const NEGATIVE_CATEGORIES = new Set(["Active - At Risk", "Insolvency - Voluntary Arrangement", "Insolvency - Administration/Receivership", "Liquidation"]);
+  function categoryOf(rawStatus) { return STATUS_TO_CATEGORY[rawStatus] || "Other"; }
+  const CATEGORY_META = {
+    "Active": { color: "#5FA8A0", chip: "Active" },
+    "Active - At Risk": { color: "#C99A4B", chip: "At risk" },
+    "Insolvency - Voluntary Arrangement": { color: "#D98E4A", chip: "Voluntary arr." },
+    "Insolvency - Administration/Receivership": { color: "#C1574A", chip: "Admin/Receiver" },
+    "Liquidation": { color: "#8B2E2E", chip: "Liquidation" },
+    "Other": { color: "#8B94A3", chip: "Other" },
+  };
+  function metaFor(category) { return CATEGORY_META[category] || CATEGORY_META.Other; }
+
+  const CITY_COORDS = {
+    LONDON: [51.539, -0.139], MANCHESTER: [53.4808, -2.2426], BRISTOL: [51.4545, -2.5879],
+    EDINBURGH: [55.9533, -3.1883], LEEDS: [53.8008, -1.5491], BRIGHTON: [50.8225, -0.1372],
+    GLASGOW: [55.8642, -4.2518], BIRMINGHAM: [52.4862, -1.8904], CARDIFF: [51.4816, -3.1791], NEWCASTLE: [54.9783, -1.6178],
+    OXFORD: [51.752, -1.2577], CAMBRIDGE: [52.2053, 0.1218], SHEFFIELD: [53.3811, -1.4701], LIVERPOOL: [53.4084, -2.9916]
+  };
+  const RAW = [
+    ["CORE & FLOW PILATES STUDIO LTD","09812345","Active","2019-03-14","LONDON","NW1 8QH","93130 - Operation of sports facilities"],
+    ["CAMDEN PILATES LAB LTD","11778899","Active","2022-06-12","LONDON","NW1 9AL","93130 - Operation of sports facilities"],
+    ["CAMDEN BEAN COFFEE ROASTERS LTD","07712233","Active","2014-04-01","LONDON","NW1 7JR","56101 - Licensed restaurants"],
+    ["RIVERSIDE PILATES MANCHESTER LTD","10456721","Active","2021-07-02","MANCHESTER","M3 4EN","93130 - Operation of sports facilities"],
+    ["NORTHERN QUARTER SOFTWARE LTD","11456789","Active","2021-11-05","MANCHESTER","M1 1FT","62012 - Business and domestic software development"],
+    ["MANCHESTER MARKETING HOUSE LTD","09556677","Voluntary Arrangement","2012-09-08","MANCHESTER","M2 5BQ","73110 - Advertising agencies"],
+    ["PILATES & CO BRISTOL LTD","11023456","Active","2022-01-20","BRISTOL","BS1 5TY","96040 - Physical well-being activities"],
+    ["BRISTOL HARBOUR BAKERY LTD","08901122","Active - Proposal to Strike off","2017-06-23","BRISTOL","BS1 6XN","10712 - Manufacture of cakes and pastry goods"],
+    ["EDINBURGH PILATES COLLECTIVE LTD","08234567","Liquidation","2015-05-11","EDINBURGH","EH1 2NG","93130 - Operation of sports facilities"],
+    ["OLD TOWN PRINT CO LTD","06554433","In Administration","2009-02-17","EDINBURGH","EH8 9YL","18129 - Printing nec"],
+    ["LEEDS REFORMER PILATES LTD","12001234","Active","2023-02-08","LEEDS","LS1 4DY","96040 - Physical well-being activities"],
+    ["LEEDS DIGITAL STUDIO LTD","11890011","Active","2022-08-14","LEEDS","LS2 7HY","62012 - Business and domestic software development"],
+    ["BRIGHTON BEACH PILATES STUDIO LTD","09988776","Active","2018-11-30","BRIGHTON","BN1 1UB","93130 - Operation of sports facilities"],
+    ["BRIGHTON VINTAGE RECORDS LTD","09345566","Active","2016-10-09","BRIGHTON","BN1 4ED","47630 - Retail sale of music and video"],
+    ["GLASGOW PILATES ROOM LTD","10765432","Active","2020-09-17","GLASGOW","G1 2FF","96040 - Physical well-being activities"],
+    ["CLYDESIDE CONSTRUCTION LTD","07223344","RECEIVERSHIP","2013-01-30","GLASGOW","G2 3DB","41202 - Construction of commercial buildings"],
+    ["BIRMINGHAM YOGA & WELLNESS LTD","10334455","Active","2020-03-03","BIRMINGHAM","B1 1AA","96040 - Physical well-being activities"],
+    ["BIRMINGHAM PILATES & BARRE LTD","12223344","Active","2024-01-09","BIRMINGHAM","B2 4QA","96040 - Physical well-being activities"],
+    ["CARDIFF BAY CAFE LTD","08667788","Active","2018-02-27","CARDIFF","CF10 4PA","56101 - Licensed restaurants"],
+    ["NEWCASTLE PILATES STUDIO LTD","12112233","Active","2023-05-19","NEWCASTLE","NE1 4ST","93130 - Operation of sports facilities"],
+    ["OXFORD AI RESEARCH HOUSE LTD","13330001","Active","2024-03-08","OXFORD","OX1 2JD","72190 - Other research and experimental development on natural sciences and engineering"],
+    ["CAMBRIDGE DATA LABS LTD","13330002","Active","2023-12-18","CAMBRIDGE","CB2 1TN","62012 - Business and domestic software development"],
+    ["SHEFFIELD FITNESS TECH LTD","13330003","Active","2024-05-02","SHEFFIELD","S1 2HH","62012 - Business and domestic software development"],
+    ["LIVERPOOL WELLNESS ROOMS LTD","13330004","Active - Proposal to Strike off","2021-04-11","LIVERPOOL","L1 8JQ","96040 - Physical well-being activities"]
+  ];
+  const DEMO_DATA = RAW.map((r, i) => {
+    const [company_name, company_number, status, incorporation_date, town, postcode, sic_text] = r;
+    const base = CITY_COORDS[town] || [54.5, -3];
+    const jitter = ((i * 37) % 13 - 6) / 700;
+    return { company_name, company_number, status, status_category: categoryOf(status), incorporation_date, incorporation_year: Number((incorporation_date || '').slice(0,4)), town, postcode, sic_text, lat: base[0] + jitter, lon: base[1] - jitter };
+  });
+
+  const root = document.getElementById("register-app");
+  const categoryButtons = ["", ...Object.keys(STATUS_CATEGORIES)].map((cat) => {
+    const label = cat === "" ? "All status" : metaFor(cat).chip;
+    const colorVar = cat === "" ? "" : `style="--cat-color:${metaFor(cat).color}"`;
+    return `<button class="rg-status-btn ${cat === "" ? "active" : ""}" data-category="${cat}" ${colorVar}>${label}</button>`;
+  }).join("");
+
+  root.innerHTML = `
+    <div class="rg-shell">
+      <div class="rg-header">
+        <div class="rg-header-main">
+          <div>
+            <p class="rg-eyebrow">UK Market Intelligence • Companies House</p>
+            <h2 class="rg-title">Market Research Radar</h2>
+            
+          </div>
+          
+        </div>
+        
+      </div>
+      
+      <div class="rg-menu-nav" role="tablist" aria-label="Main workflow">
+        <button class="rg-menu-btn active" data-menu="search">Search</button>
+        <button class="rg-menu-btn" data-menu="explore">Explore</button>
+        <button class="rg-menu-btn" data-menu="act">Act</button>
+      </div>
+      <section class="rg-menu-panel active" id="rg-menu-search">
+        <div class="rg-search-card">
+          <h3>Search the market</h3>
+          <p>Use keywords, town names or postcode areas to narrow the market. The filters here control what appears in the Explore and Act views.</p>
+        </div>
+        <div class="rg-controls">
+          <input type="text" id="rg-q" placeholder='Sector or keyword: "pilates", "software", "bakery"…' />
+          <div class="rg-status-dropdown" id="rg-status-dropdown">
+            <button type="button" class="rg-status-toggle" id="rg-status-toggle" aria-expanded="false">All status ▾</button>
+            <div class="rg-status-menu" id="rg-status-menu"></div>
+          </div>
+          <button id="rg-search-btn" class="rg-search-btn">Search</button>
+          <a href="#" class="rg-export" id="rg-export">Export CSV <span style="opacity:.7">(first 50k)</span></a>
+        </div>
+      </section>
+      <section class="rg-menu-panel" id="rg-menu-explore">
+        <div class="rg-tabs" role="tablist">
+          <button class="rg-tab active" data-tab="radar">Overview</button>
+          <button class="rg-tab" data-tab="heatmap">Map</button>
+          <button class="rg-tab" data-tab="trends">Trends</button>
+          <button class="rg-tab" data-tab="opportunity">Opportunities</button>
+        </div>
+        <div class="rg-explore-filters">
+          <div class="rg-place-wrapper">
+            <input type="text" id="rg-explore-place" placeholder="Filter by town, postcode or postcode district" />
+            <div class="rg-place-autocomplete" id="rg-explore-place-autocomplete"></div>
+          </div>
+        </div>
+        <section class="rg-panel active" id="rg-panel-radar"><div class="rg-loading">Building market radar…</div></section>
+        <section class="rg-panel" id="rg-panel-heatmap">
+          <div class="rg-map-layout">
+            <div class="rg-map-card">
+              <div class="rg-map-tools">
+                <select id="rg-heat-mode"><option value="count">Density</option><option value="recent_count">Recent formation</option><option value="risk_count">Stress / risk</option></select>
+              </div>
+              <div id="rg-heatmap"></div>
+            </div>
+            <div id="rg-heat-summary" class="rg-cardbox"><div class="rg-loading">Loading heatmap…</div></div>
+          </div>
+        </section>
+        <section class="rg-panel" id="rg-panel-trends"><div class="rg-loading">Building trend view…</div></section>
+        <section class="rg-panel" id="rg-panel-opportunity"><div class="rg-loading">Scoring opportunities…</div></section>
+      </section>
+      <section class="rg-menu-panel" id="rg-menu-act">
+        <div class="rg-search-card">
+          <h3>Act on the results</h3>
+          <p>Review the companies behind the signal and use the export action when you want to share or investigate the list further.</p>
+        </div>
+        <div class="rg-panel active" id="rg-panel-companies" style="padding-top: 12px;">
+          <p class="rg-count" id="rg-count"></p>
+          <div class="rg-list-wrap">
+            <div class="rg-list" id="rg-list"><div class="rg-loading">Checking data source…</div></div>
+            <div class="rg-detail" id="rg-detail"><h3>Select a company</h3><p class="rg-detail-row">Use this tab to inspect the rows behind the market signal.</p></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  `;
+
+  const els = {
+    q: root.querySelector("#rg-q"), export: root.querySelector("#rg-export"),
+    explorePlace: root.querySelector("#rg-explore-place"), exploreAutocomplete: root.querySelector("#rg-explore-place-autocomplete"),
+    statusDropdown: root.querySelector("#rg-status-dropdown"), statusToggle: root.querySelector("#rg-status-toggle"), statusMenu: root.querySelector("#rg-status-menu"), count: root.querySelector("#rg-count"),
+    list: root.querySelector("#rg-list"), detail: root.querySelector("#rg-detail"), heatSummary: root.querySelector("#rg-heat-summary"), heatMode: root.querySelector("#rg-heat-mode"),
+    radar: root.querySelector("#rg-panel-radar"), trends: root.querySelector("#rg-panel-trends"), opportunity: root.querySelector("#rg-panel-opportunity"), heatPanel: root.querySelector("#rg-panel-heatmap"),
+    mainMenu: root.querySelectorAll(".rg-menu-btn"), menuPanels: root.querySelectorAll(".rg-menu-panel"), searchBtn: root.querySelector("#rg-search-btn")
+  };
+
+  let isLive = false, categoryFilter = [], selectedIndex = null;
+  const PAGE_SIZE = 200;
+  const state = { items: [], total: 0, offset: 0, insights: null };
+  let heatMap = null, heatLayers = [];
+
+  function fmt(n) { return Number(n || 0).toLocaleString(); }
+  function pct(n, d) { return d ? ((n / d) * 100).toFixed(1) : "0.0"; }
+  function escapeHtml(str) { return String(str ?? "").replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
+  function params() {
+    const cat = Array.isArray(categoryFilter) ? (categoryFilter.length ? categoryFilter.join('|') : '') : (categoryFilter || '');
+    return { q: els.q.value.trim(), place: els.explorePlace?.value?.trim() || '', category: cat };
+  }
+  function paramsToQuery(extra = {}) { const p = new URLSearchParams({ ...params(), ...extra }); return p.toString(); }
+  function setLiveBadge() { /* badge removed from UI; keep isLive state for logic only */ }
+
+  async function checkLiveSource() {
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 1200);
+      const res = await fetch("/api/search?limit=1", { signal: ctrl.signal });
+      clearTimeout(t);
+      if (res.ok) isLive = true;
+    } catch (e) {}
+    setLiveBadge();
+  }
+
+  async function fetchLivePage(reset) {
+    const offset = reset ? 0 : state.offset;
+    const res = await fetch("/api/search?" + paramsToQuery({ limit: PAGE_SIZE, offset, geocode: "0" }));
+    if (!res.ok) return { results: [], total_count: 0, offset, limit: PAGE_SIZE };
+    return await res.json();
+  }
+  async function fetchLiveInsights() {
+    const res = await fetch("/api/insights?" + paramsToQuery({ heatmap_limit: 900, min_group: 2 }));
+    if (!res.ok) return null;
+    return await res.json();
+  }
+
+  function applyDemoFilters() {
+    const q = els.q.value.trim().toLowerCase();
+    const place = els.place.value.trim().toLowerCase();
+    return DEMO_DATA.filter((item) => {
+      const matchesQ = !q || item.company_name.toLowerCase().includes(q) || (item.sic_text || "").toLowerCase().includes(q);
+      const matchesPlace = !place || (item.town || "").toLowerCase().includes(place) || (item.postcode || "").toLowerCase().includes(place);
+      const matchesCategory = !categoryFilter || (Array.isArray(categoryFilter) ? categoryFilter.length === 0 || categoryFilter.includes(item.status_category) : item.status_category === categoryFilter);
+      return matchesQ && matchesPlace && matchesCategory;
+    });
+  }
+
+  function groupBy(arr, keyFn) {
+    const map = new Map();
+    arr.forEach((item) => {
+      const key = keyFn(item) || "UNKNOWN";
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(item);
+    });
+    return map;
+  }
+  function demoInsights() {
+    const items = applyDemoFilters();
+    const total = items.length;
+    const categoryCounts = {};
+    items.forEach(i => { categoryCounts[i.status_category] = (categoryCounts[i.status_category] || 0) + 1; });
+    const years = [...groupBy(items, i => i.incorporation_year).entries()].filter(([y]) => y).sort((a,b) => Number(a[0]) - Number(b[0]));
+    const trend = years.map(([year, rows]) => ({ year: Number(year), count: rows.length }));
+    const maxYear = trend.length ? trend[trend.length - 1].year : new Date().getFullYear();
+    const recentStart = maxYear - 1, prevStart = maxYear - 3, prevEnd = maxYear - 2;
+    function groupStats(map, labelName) {
+      return [...map.entries()].map(([label, rows]) => {
+        const count = rows.length;
+        const active = rows.filter(r => r.status_category === "Active").length;
+        const risk = rows.filter(r => NEGATIVE_CATEGORIES.has(r.status_category)).length;
+        const recent = rows.filter(r => r.incorporation_year >= recentStart && r.incorporation_year <= maxYear).length;
+        const previous = rows.filter(r => r.incorporation_year >= prevStart && r.incorporation_year <= prevEnd).length;
+        const growth = previous ? Number((((recent - previous) / previous) * 100).toFixed(1)) : null;
+        const activeRate = Number(pct(active, count)), riskRate = Number(pct(risk, count));
+        const growthBonus = previous === 0 && recent > 0 ? 20 : Math.max(-20, Math.min(30, (growth || 0) / 4));
+        const score = Number((recent * 1.8 + activeRate * .35 - riskRate * .9 + growthBonus - Math.log10(Math.max(count,1))*3.5).toFixed(1));
+        return { [labelName]: label, count, active_count: active, risk_count: risk, recent_count: recent, previous_count: previous, growth_pct: growth, active_rate: activeRate, risk_rate: riskRate, opportunity_score: score };
+      }).sort((a,b) => b.count - a.count);
+    }
+    const towns = groupStats(groupBy(items, i => i.town), "town");
+    const sectors = groupStats(groupBy(items, i => i.sic_text), "sic_text");
+    const points = items.map(i => ({ outcode: (i.postcode || '').split(' ')[0], postcode: i.postcode, lat: i.lat, lon: i.lon, count: 1, risk_count: NEGATIVE_CATEGORIES.has(i.status_category) ? 1 : 0, recent_count: i.incorporation_year >= recentStart ? 1 : 0, intensity: 1 }));
+    const active = categoryCounts.Active || 0;
+    const eureka = [
+      { sentiment: active / Math.max(total, 1) >= .85 ? "positive" : "warning", title: "Market health", value: `${pct(active,total)}% active`, note: `${fmt(total-active)} companies are outside the clean Active bucket.` },
+      trend.length >= 2 ? { sentiment: trend[trend.length-1].count >= trend[trend.length-2].count ? "positive" : "negative", title: "Latest formation pulse", value: `${trend[trend.length-1].year}: ${trend[trend.length-1].count}`, note: `Versus ${trend[trend.length-2].year}: ${trend[trend.length-2].count}.` } : { sentiment: "neutral", title: "Formation pulse", value: "Not enough years", note: "Use the live dataset for a stronger signal." },
+      towns[0] ? { sentiment: "positive", title: "Where to look first", value: towns.slice().sort((a,b)=>b.opportunity_score-a.opportunity_score)[0].town, note: "Highest opportunity score in the filtered demo set." } : { sentiment: "neutral", title: "No location", value: "—", note: "Broaden the search." }
+    ];
+    return { total_count: total, max_incorporation_year: maxYear, comparison_window: { recent: `${recentStart}-${maxYear}`, previous: `${prevStart}-${prevEnd}` }, status: { categories: categoryCounts, raw: [] }, trend, towns, sectors, rankings: { towns_by_opportunity: towns.slice().sort((a,b)=>b.opportunity_score-a.opportunity_score), towns_by_risk: towns.slice().sort((a,b)=>b.risk_rate-a.risk_rate), sectors_by_opportunity: sectors.slice().sort((a,b)=>b.opportunity_score-a.opportunity_score), sectors_by_risk: sectors.slice().sort((a,b)=>b.risk_rate-a.risk_rate) }, heatmap: { points, full_match_count: total, plotted_cells: points.length, note: "Demo points are fictional; live mode uses aggregated postcode districts." }, eureka };
+  }
+
+  function renderKpis(ins) {
+    const total = ins.total_count || 0;
+    const cat = ins.status?.categories || {};
+    const active = cat.Active || 0;
+    const risk = Object.keys(cat).filter(k => NEGATIVE_CATEGORIES.has(k)).reduce((s,k)=>s+cat[k],0);
+    const trend = ins.trend || [];
+    const latest = trend.length ? trend[trend.length-1] : {year:'—', count:0};
+    const topTown = (ins.rankings?.towns_by_opportunity || [])[0];
+    return `
+      <div class="rg-grid rg-kpis">
+        <div class="rg-cardbox"><div class="rg-kpi-label">Total market</div><div class="rg-kpi-value">${fmt(total)}</div><div class="rg-kpi-note">Full matching universe</div></div>
+        <div class="rg-cardbox"><div class="rg-kpi-label">Active health</div><div class="rg-kpi-value">${pct(active,total)}%</div><div class="rg-kpi-note">Active status share</div></div>
+        <div class="rg-cardbox"><div class="rg-kpi-label">Stress signal</div><div class="rg-kpi-value">${pct(risk,total)}%</div><div class="rg-kpi-note">At-risk/insolvency/liquidation</div></div>
+        <div class="rg-cardbox"><div class="rg-kpi-label">Latest year</div><div class="rg-kpi-value">${fmt(latest.count)}</div><div class="rg-kpi-note">Incorporated in ${latest.year}</div></div>
+        <div class="rg-cardbox"><div class="rg-kpi-label">Best pocket</div><div class="rg-kpi-value">${escapeHtml(topTown ? topTown.town : '—')}</div><div class="rg-kpi-note">By opportunity score</div></div>
+      </div>`;
+  }
+
+  function renderEureka(ins) {
+    const cards = ins.eureka || [];
+    return `<div class="rg-grid rg-eureka">${cards.map(c => `
+      <div class="rg-cardbox ${escapeHtml(c.sentiment)}"><div class="rg-eureka-title">${escapeHtml(c.title)}</div><div class="rg-eureka-value">${escapeHtml(c.value)}</div><div class="rg-eureka-note">${escapeHtml(c.note)}</div></div>
+    `).join('')}</div>`;
+  }
+
+  function renderBars(items, labelKey, valueKey, options = {}) {
+    const rows = (items || []).slice(0, options.limit || 8);
+    const max = Math.max(1, ...rows.map(r => Number(r[valueKey] || 0)));
+    if (!rows.length) return `<div class="rg-empty">No data yet.</div>`;
+    return `<div class="rg-bars">${rows.map(r => `
+      <div class="rg-bar-row"><div class="rg-bar-label" title="${escapeHtml(r[labelKey])}">${escapeHtml(r[labelKey])}</div><div class="rg-bar-track"><div class="rg-bar-fill ${options.risk ? 'risk' : ''}" style="width:${Math.max(2, (Number(r[valueKey] || 0) / max) * 100)}%"></div></div><div class="num">${fmt(r[valueKey])}</div></div>
+    `).join('')}</div>`;
+  }
+
+  function renderTrendChart(trend) {
+    trend = (trend || []).slice(-25);
+    if (!trend.length) return `<div class="rg-empty">No incorporation dates available.</div>`;
+    const w = 760, h = 250, pad = 32, max = Math.max(1, ...trend.map(d => d.count));
+    const step = trend.length > 1 ? (w - pad*2) / (trend.length - 1) : 0;
+    const points = trend.map((d,i) => [pad + i*step, h-pad - (d.count/max)*(h-pad*2)]);
+    const path = points.map((p,i) => `${i?'L':'M'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ');
+    const bars = trend.map((d,i) => {
+      const x = pad + i*step - Math.max(4, step*.28)/2;
+      const bh = (d.count/max)*(h-pad*2);
+      return `<rect x="${x}" y="${h-pad-bh}" width="${Math.max(4, step*.28)}" height="${bh}" rx="3" fill="rgba(95,168,160,.35)"><title>${d.year}: ${d.count}</title></rect>`;
+    }).join('');
+    const labels = trend.filter((_,i)=> i===0 || i===trend.length-1 || i%5===0).map((d,i) => {
+      const idx = trend.indexOf(d), x = pad + idx*step;
+      return `<text x="${x}" y="${h-8}" text-anchor="middle" fill="#9AA5B5" font-size="10">${d.year}</text>`;
+    }).join('');
+    return `<svg class="rg-chart" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="Incorporation trend chart"><line x1="${pad}" y1="${h-pad}" x2="${w-pad}" y2="${h-pad}" stroke="#334154"/>${bars}<path d="${path}" fill="none" stroke="#C99A4B" stroke-width="3" vector-effect="non-scaling-stroke"/>${points.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="3" fill="#F0EADC"><title>${trend[i].year}: ${trend[i].count}</title></circle>`).join('')}${labels}</svg>`;
+  }
+
+  function renderTable(rows, type, limit = 10) {
+    rows = (rows || []).slice(0, limit);
+    if (!rows.length) return `<div class="rg-empty">No ranked rows yet.</div>`;
+    const key = type === 'sector' ? 'sic_text' : 'town';
+    return `<table class="rg-table"><thead><tr><th>${type === 'sector' ? 'Sector / SIC text' : 'Town'}</th><th class="num">Count</th><th class="num">Recent</th><th class="num">Growth</th><th class="num">Risk</th><th class="num">Score</th></tr></thead><tbody>${rows.map(r => `
+      <tr><td>${escapeHtml(r[key])}</td><td class="num">${fmt(r.count)}</td><td class="num">${fmt(r.recent_count)}</td><td class="num">${r.growth_pct === null || r.growth_pct === undefined ? 'new' : `${r.growth_pct}%`}</td><td class="num">${r.risk_rate}%</td><td class="num">${r.opportunity_score}</td></tr>
+    `).join('')}</tbody></table>`;
+  }
+
+  function renderRadar() {
+    const ins = state.insights;
+    if (!ins) { els.radar.innerHTML = `<div class="rg-loading">Building market radar…</div>`; return; }
+    const topSectors = (ins.sectors || []).slice(0,8);
+    const statusRows = Object.entries(ins.status?.categories || {}).map(([name,count]) => ({ name, count })).sort((a,b)=>b.count-a.count);
+    els.radar.innerHTML = `
+      ${renderEureka(ins)}
+      ${renderKpis(ins)}
+      <div class="rg-split">
+        <div class="rg-cardbox"><h3 class="rg-section-title">Formation pulse</h3><p class="rg-section-sub">New company formation by incorporation year — a registration-activity signal that can move before broader market reports catch up. Not proof of demand.</p>${renderTrendChart(ins.trend)}</div>
+        <div class="rg-cardbox"><h3 class="rg-section-title">Status mix</h3><p class="rg-section-sub">A fast health read for the searched market.</p>${renderBars(statusRows, 'name', 'count', { limit: 7, risk: true })}</div>
+      </div>
+      <div class="rg-split">
+        <div class="rg-cardbox"><h3 class="rg-section-title">Top sector language</h3><p class="rg-section-sub">Useful for keyword strategy, positioning and competitor clustering.</p>${renderBars(topSectors, 'sic_text', 'count', { limit: 8 })}</div>
+        <div class="rg-cardbox"><h3 class="rg-section-title">Aha lens</h3><p class="rg-section-sub">Look for places with rising incorporations but low stress. Look for sectors with high stress as possible consolidation, partnership or warning signals.</p>${renderTable(ins.rankings?.towns_by_opportunity || [], 'town', 6)}</div>
+      </div>
+    `;
+  }
+
+  function initHeatMap() {
+    if (heatMap) return;
+    heatMap = L.map(root.querySelector("#rg-heatmap"), { scrollWheelZoom: false }).setView([54.5, -3.2], 5.4);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "&copy; OpenStreetMap contributors", maxZoom: 18 }).addTo(heatMap);
+  }
+  function clearHeatLayers() { heatLayers.forEach(l => heatMap.removeLayer(l)); heatLayers = []; }
+  function renderHeatMap() {
+    initHeatMap();
+    const ins = state.insights;
+    const mode = els.heatMode.value || 'count';
+    clearHeatLayers();
+    if (!ins || !ins.heatmap || !ins.heatmap.points.length) {
+      els.heatSummary.innerHTML = `<h3 class="rg-section-title">Heatmap</h3><p class="rg-section-sub">No geocoded postcode districts yet. In live mode, the server geocodes representative postcodes and caches them.</p>`;
+      return;
+    }
+    const points = ins.heatmap.points.filter(p => Number(p[mode] || 0) > 0);
+    const maxVal = Math.max(1, ...points.map(p => Number(p[mode] || 0)));
+    const color = mode === 'risk_count' ? '#C1574A' : (mode === 'recent_count' ? '#5FA8A0' : '#C99A4B');
+    const bounds = [];
+    points.forEach(p => {
+      const val = Number(p[mode] || 0);
+      const radius = 6 + Math.sqrt(val / maxVal) * 38;
+      const marker = L.circleMarker([p.lat, p.lon], { radius, color, weight: 1, fillColor: color, fillOpacity: 0.25 + Math.min(.45, val/maxVal*.45) })
+        .addTo(heatMap)
+        .bindPopup(`<b>${escapeHtml(p.outcode)}</b><br>${mode.replace('_',' ')}: ${fmt(val)}<br>Total: ${fmt(p.count)}<br>Recent: ${fmt(p.recent_count)}<br>Risk: ${fmt(p.risk_count)}`);
+      heatLayers.push(marker); bounds.push([p.lat, p.lon]);
+    });
+    if (bounds.length) heatMap.fitBounds(bounds, { padding: [32,32], maxZoom: 12 });
+    const top = points.slice().sort((a,b)=>Number(b[mode]||0)-Number(a[mode]||0)).slice(0,8).map(p => ({ label: p.outcode, value: p[mode], count: p.count }));
+    els.heatSummary.innerHTML = `<h3 class="rg-section-title">Full-result heatmap</h3><p class="rg-section-sub">${escapeHtml(ins.heatmap.note || '')}</p>
+      <div class="rg-kpi-label">Full matches behind map</div><div class="rg-kpi-value">${fmt(ins.heatmap.full_match_count)}</div><div class="rg-kpi-note">Plotted postcode cells: ${fmt(ins.heatmap.plotted_cells)}</div>
+      <div style="margin-top:16px">${renderBars(top, 'label', 'value', { limit: 8, risk: mode==='risk_count' })}</div>
+      <p class="rg-footnote">Tip: switch between Density, Recent formation and Stress. Big circles are not individual pins; they are aggregated postcode districts, so a 109k-result market remains readable.</p>`;
+    setTimeout(() => heatMap.invalidateSize(), 50);
+  }
+
+  function renderTrends() {
+    const ins = state.insights;
+    if (!ins) { els.trends.innerHTML = `<div class="rg-loading">Building trend view…</div>`; return; }
+    els.trends.innerHTML = `
+      <div class="rg-split">
+        <div class="rg-cardbox"><h3 class="rg-section-title">Time trend in this market</h3><p class="rg-section-sub">Comparison window: recent ${escapeHtml(ins.comparison_window?.recent || '')} vs previous ${escapeHtml(ins.comparison_window?.previous || '')}.${ins.comparison_window?.latest_year_in_trend_is_ytd ? ' Current-year bar is year-to-date and is not used for annual opportunity scoring.' : ''}</p>${renderTrendChart(ins.trend)}</div>
+        <div class="rg-cardbox"><h3 class="rg-section-title">Fastest opportunity towns</h3><p class="rg-section-sub">High recent formation + healthy status mix + useful density.</p>${renderTable(ins.rankings?.towns_by_opportunity || [], 'town', 10)}</div>
+      </div>
+      <div class="rg-split">
+        <div class="rg-cardbox"><h3 class="rg-section-title">Positive sector development</h3><p class="rg-section-sub">Sectors with stronger recent formation signals.</p>${renderTable(ins.rankings?.sectors_by_opportunity || [], 'sector', 10)}</div>
+        <div class="rg-cardbox"><h3 class="rg-section-title">Negative development / stress</h3><p class="rg-section-sub">Higher risk ratio means more companies here are in an insolvency-related status. That's a registry signal, not a confirmed cause — financing pressure, filing delays, sector-wide cost shocks, or other company-specific issues could each be behind it.</p>${renderTable(ins.rankings?.towns_by_risk || [], 'town', 10)}</div>
+      </div>`;
+  }
+
+  function renderOpportunity() {
+    const ins = state.insights;
+    if (!ins) { els.opportunity.innerHTML = `<div class="rg-loading">Scoring opportunities…</div>`; return; }
+    els.opportunity.innerHTML = `
+      <div class="rg-split">
+        <div class="rg-cardbox"><h3 class="rg-section-title">Where to attack</h3><p class="rg-section-sub">Locations ranked by the opportunity score. Treat this as a shortlist generator for deeper research.</p>${renderTable(ins.rankings?.towns_by_opportunity || [], 'town', 15)}</div>
+        <div class="rg-cardbox"><h3 class="rg-section-title">Where to be careful</h3><p class="rg-section-sub">High stress can reveal weak economics, oversupply, or a chance to buy/partner if you understand the cause.</p>${renderTable(ins.rankings?.towns_by_risk || [], 'town', 15)}</div>
+      </div>
+      <div class="rg-split">
+        <div class="rg-cardbox"><h3 class="rg-section-title">Sector opportunities</h3>${renderTable(ins.rankings?.sectors_by_opportunity || [], 'sector', 15)}</div>
+        <div class="rg-cardbox"><h3 class="rg-section-title">Sector stress</h3>${renderTable(ins.rankings?.sectors_by_risk || [], 'sector', 15)}</div>
+      </div>
+      <p class="rg-footnote">Score formula is intentionally transparent: recent formation, active-rate and low-risk signals lift the score; saturation and status stress reduce it. Change the formula in companies_house_market_server.py for your own thesis.</p>`;
+  }
+
+  function showDetail(item) {
+    if (!item) return;
+    const m = metaFor(item.status_category);
+    els.detail.innerHTML = `<h3>${escapeHtml(item.company_name)}</h3>
+      <div class="rg-detail-row">Company no. <b>${escapeHtml(item.company_number)}</b></div>
+      <div class="rg-detail-row">Status <b style="color:${m.color}">${escapeHtml(item.status)}</b></div>
+      <div class="rg-detail-row">Incorporated <b>${escapeHtml(item.incorporation_date || '—')}</b></div>
+      <div class="rg-detail-row">Town / postcode <b>${escapeHtml(item.town || '')} ${escapeHtml(item.postcode || '')}</b></div>
+      <div class="rg-detail-row">SIC <b>${escapeHtml(item.sic_text || '—')}</b></div>
+      <p class="rg-footnote">Use this company as a qualitative lead: check website, offer, reviews, pricing, hiring and filings before making strategic decisions.</p>`;
+  }
+  function renderList() {
+    const items = state.items || [], total = state.total || 0;
+    els.count.textContent = items.length === total ? `${fmt(total)} registered businesses found` : `Showing ${fmt(items.length)} of ${fmt(total)} matches. Insights above use the full ${fmt(total)}.`;
+    if (!items.length) { els.list.innerHTML = `<div class="rg-empty">No matches. Try a broader keyword or clear the place filter.</div>`; return; }
+    const rows = items.map((item, idx) => {
+      const m = metaFor(item.status_category);
+      return `<button class="rg-card ${idx === selectedIndex ? 'selected' : ''}" data-idx="${idx}"><div class="rg-card-name">${escapeHtml(item.company_name)}</div><div class="rg-card-meta"><span class="rg-pill" style="background:${m.color}22;color:${m.color};border-color:${m.color}">${m.chip}</span><span>${escapeHtml(item.company_number)}</span><span>${escapeHtml(item.incorporation_date || '')}</span></div><div class="rg-card-sic">${escapeHtml(item.sic_text || '')} · ${escapeHtml(item.town || '')} ${escapeHtml(item.postcode || '')}</div></button>`;
+    }).join('');
+    const loadMore = (isLive && items.length < total) ? `<button class="rg-loadmore" id="rg-loadmore">Load more (${fmt(total - items.length)} remaining)</button>` : "";
+    els.list.innerHTML = rows + loadMore;
+    els.list.querySelectorAll('.rg-card').forEach(btn => btn.addEventListener('click', () => { selectedIndex = Number(btn.dataset.idx); renderList(); showDetail(state.items[selectedIndex]); }));
+    const more = els.list.querySelector('#rg-loadmore');
+    if (more) more.addEventListener('click', () => doSearch(false));
+  }
+
+  async function loadInsights() {
+    state.insights = isLive ? await fetchLiveInsights() : demoInsights();
+    renderRadar(); renderTrends(); renderOpportunity(); renderHeatMap();
+  }
+  async function doSearch(reset) {
+    if (reset) { state.offset = 0; state.items = []; selectedIndex = null; els.detail.innerHTML = `<h3>Select a company</h3><p class="rg-detail-row">Use this tab to inspect the rows behind the market signal.</p>`; }
+    setLiveBadge();
+    if (isLive) {
+      const data = await fetchLivePage(reset);
+      state.total = data.total_count || 0;
+      state.items = reset ? (data.results || []) : state.items.concat(data.results || []);
+      state.offset = state.items.length;
+    } else {
+      const filtered = applyDemoFilters();
+      state.total = filtered.length;
+      state.items = filtered;
+    }
+    renderList();
+    if (reset) await loadInsights();
+    els.export.href = isLive ? ("/api/export.csv?" + paramsToQuery({ limit: 50000 })) : "#";
+  }
+
+  function debounce(fn, ms) { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); }; }
+  const debouncedSearch = debounce(() => doSearch(true), 220);
+  // Populate the status dropdown with checkboxes and wire the search button.
+  if (els.statusMenu && els.statusToggle) {
+    const cats = [''].concat(Object.keys(STATUS_CATEGORIES));
+    els.statusMenu.innerHTML = cats.map(cat => {
+      const key = cat === '' ? '' : cat;
+      const label = cat === '' ? 'All status' : metaFor(cat).chip;
+      const checked = cat === '' ? 'checked' : '';
+      return `<label><input type="checkbox" data-cat="${key}" ${checked} /> ${label}</label>`;
+    }).join('');
+    const checkboxes = Array.from(els.statusMenu.querySelectorAll('input[type=checkbox]'));
+    function updateFromCheckboxes() {
+      const allBox = checkboxes.find(cb => cb.dataset.cat === '');
+      const others = checkboxes.filter(cb => cb.dataset.cat !== '');
+      if (allBox && allBox.checked) {
+        others.forEach(cb => cb.checked = false);
+        categoryFilter = [];
+        els.statusToggle.textContent = 'All status ▾';
+      } else {
+        const selected = others.filter(cb => cb.checked).map(cb => cb.dataset.cat);
+        categoryFilter = selected;
+        els.statusToggle.textContent = selected.length ? selected.map(s => metaFor(s).chip).join(', ') + ' ▾' : 'All status ▾';
+      }
+    }
+    checkboxes.forEach(cb => cb.addEventListener('change', (e) => {
+      if (cb.dataset.cat === '' && cb.checked) {
+        // uncheck others
+        checkboxes.forEach(c => { if (c.dataset.cat !== '') c.checked = false; });
+      }
+      if (cb.dataset.cat !== '' && cb.checked) {
+        const allCb = checkboxes.find(c => c.dataset.cat === ''); if (allCb) allCb.checked = false;
+      }
+      updateFromCheckboxes();
+    }));
+    // Initialize toggle text based on initial checkbox state
+    updateFromCheckboxes();
+    els.statusToggle.addEventListener('click', (e) => {
+      const isHidden = els.statusMenu.hasAttribute('hidden');
+      if (isHidden) { els.statusMenu.removeAttribute('hidden'); } else { els.statusMenu.setAttribute('hidden', ''); }
+      els.statusToggle.setAttribute('aria-expanded', String(!isHidden));
+    });
+    document.addEventListener('click', (e) => {
+      if (!root.querySelector('#rg-status-dropdown').contains(e.target)) {
+        els.statusMenu.setAttribute('hidden', '');
+        els.statusToggle.setAttribute('aria-expanded', 'false');
+      }
+    });
+  }
+  if (els.searchBtn) els.searchBtn.addEventListener('click', async () => {
+    // Run the search
+    await doSearch(true);
+    // Switch to Explore panel to show results
+    setTimeout(() => {
+      Array.from(els.mainMenu).forEach(b => b.classList.remove('active'));
+      Array.from(els.menuPanels).forEach(p => p.classList.remove('active'));
+      const exploreBtn = Array.from(els.mainMenu).find(b => b.dataset.menu === 'explore');
+      const explorePanel = root.querySelector('#rg-menu-explore');
+      if (exploreBtn) exploreBtn.classList.add('active');
+      if (explorePanel) explorePanel.classList.add('active');
+      // Trigger initial render of explore content
+      renderKpis(); renderEureka(); renderBars(); renderTrendChart(); renderRadar();
+    }, 100);
+  });
+  // Set up town autocomplete
+  const uniqueTowns = [...new Set(DEMO_DATA.map(d => d.town).sort())];
+  // Set up Explore page town filter with autocomplete
+  if (els.explorePlace && els.exploreAutocomplete) {
+    function showPlaceSuggestions(value) {
+      const filtered = value.trim().length > 0 
+        ? uniqueTowns.filter(town => town.toLowerCase().includes(value.toLowerCase()))
+        : [];
+      if (filtered.length > 0) {
+        els.exploreAutocomplete.innerHTML = filtered.map(town => 
+          `<div class="rg-place-option">${escapeHtml(town)}</div>`
+        ).join('');
+        els.exploreAutocomplete.classList.add('active');
+      } else {
+        els.exploreAutocomplete.classList.remove('active');
+      }
+    }
+    els.explorePlace.addEventListener('input', (e) => {
+      showPlaceSuggestions(e.target.value);
+      // Re-render with new filter
+      renderList();
+      renderKpis(); renderEureka(); renderBars(); renderTrendChart(); renderRadar();
+    });
+    els.explorePlace.addEventListener('focus', (e) => {
+      showPlaceSuggestions(e.target.value);
+    });
+    els.exploreAutocomplete.addEventListener('click', (e) => {
+      if (e.target.classList.contains('rg-place-option')) {
+        els.explorePlace.value = e.target.textContent;
+        els.exploreAutocomplete.classList.remove('active');
+        // Re-render with selected town
+        renderList();
+        renderKpis(); renderEureka(); renderBars(); renderTrendChart(); renderRadar();
+      }
+    });
+    document.addEventListener('click', (e) => {
+      if (!els.explorePlace.contains(e.target) && !els.exploreAutocomplete.contains(e.target)) {
+        els.exploreAutocomplete.classList.remove('active');
+      }
+    });
+  }
+  els.heatMode.addEventListener('change', renderHeatMap);
+  root.querySelectorAll('.rg-tab').forEach(tab => tab.addEventListener('click', () => {
+    root.querySelectorAll('.rg-tab').forEach(t => t.classList.toggle('active', t === tab));
+    root.querySelectorAll('.rg-panel').forEach(p => p.classList.remove('active'));
+    root.querySelector(`#rg-panel-${tab.dataset.tab}`).classList.add('active');
+    if (tab.dataset.tab === 'heatmap') setTimeout(() => { initHeatMap(); heatMap.invalidateSize(); renderHeatMap(); }, 60);
+  }));
+  els.export.addEventListener('click', (e) => { if (!isLive) { e.preventDefault(); alert('CSV export is available when the Flask server is running with live data.'); } });
+  els.mainMenu.forEach(btn => btn.addEventListener('click', () => {
+    els.mainMenu.forEach(b => b.classList.toggle('active', b === btn));
+    els.menuPanels.forEach(panel => panel.classList.toggle('active', panel.id === `rg-menu-${btn.dataset.menu}`));
+    if (btn.dataset.menu === 'explore') {
+      setTimeout(() => {
+        initHeatMap();
+        heatMap.invalidateSize();
+        renderHeatMap();
+      }, 60);
+    }
+  }));
+
+  checkLiveSource().then(() => doSearch(true));
+})();
+</script>

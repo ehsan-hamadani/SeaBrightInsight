@@ -18,7 +18,7 @@ from sqlalchemy import and_, delete, func, or_, select
 from sqlalchemy.orm import Session
 
 from .ch_urls import jinja_ch_registry_link
-from .config import REPO_ROOT, settings
+from .config import settings
 from .phone_display import jinja_phone_cell, jinja_phone_display
 from .db import Base, engine, get_db, migrate_companies_table
 from .enrich import enrich_all_companies_background, enrich_company_merge
@@ -30,8 +30,8 @@ from .fetch_info import (
 from .import_data import import_directors_csv, import_market_research_csv
 from .models import Company, Director
 
-_MARKET_CSV = REPO_ROOT / "Market Research List.csv"
-_DIRECTORS_CSV = REPO_ROOT / "market_research_directors.csv"
+_MARKET_CSV = settings.market_csv_path
+_DIRECTORS_CSV = settings.directors_csv_path
 
 app = FastAPI(title="Company Directory", description="Market research company records")
 app.add_middleware(GZipMiddleware, minimum_size=1000)
@@ -726,7 +726,7 @@ def admin_import_directors(db: Session = Depends(get_db)):
     """Import director records from the configured directors CSV."""
     path = _DIRECTORS_CSV
     if not path.is_file():
-        alt = _REPO / "market_research_directors_test5.csv"
+        alt = settings.fallback_directors_csv_path
         path = alt if alt.is_file() else path
     if not path.is_file():
         return RedirectResponse("/companies?msg=missing_directors_csv", status_code=303)

@@ -39,6 +39,21 @@ class Settings:
     sqlite_path: Path = Path(
         os.environ.get("SQLITE_PATH", str(REPO_ROOT / "data" / "companies.sqlite3"))
     )
+    market_csv_path: Path = Path(
+        os.environ.get("MARKET_CSV_PATH", str(REPO_ROOT / "Market Research List.csv"))
+    )
+    directors_csv_path: Path = Path(
+        os.environ.get(
+            "DIRECTORS_CSV_PATH",
+            str(REPO_ROOT / "market_research_directors.csv"),
+        )
+    )
+    fallback_directors_csv_path: Path = Path(
+        os.environ.get(
+            "FALLBACK_DIRECTORS_CSV_PATH",
+            str(REPO_ROOT / "market_research_directors_test5.csv"),
+        )
+    )
     auto_create_tables: bool = _bool_env("AUTO_CREATE_TABLES", True)
     auto_migrate: bool = _bool_env("AUTO_MIGRATE", True)
     auto_enrich_companies: bool = _bool_env(

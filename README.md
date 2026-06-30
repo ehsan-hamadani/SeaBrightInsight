@@ -46,4 +46,10 @@ docker run --rm -p 8000:8000 -v seabright-data:/app/data --env-file .env.example
 
 `AUTO_CREATE_TABLES` and `AUTO_MIGRATE` are enabled by default for the current lightweight SQLite deployment. For managed production databases, run migrations deliberately and set them to `0`.
 
+`MARKET_CSV_PATH`, `DIRECTORS_CSV_PATH`, and `FALLBACK_DIRECTORS_CSV_PATH` control optional admin CSV imports. The CSV files are local runtime data and are not tracked.
+
 `/healthz` verifies the app process and database connection.
+
+## Repository Notes
+
+Dependencies are defined in `pyproject.toml`. Exploratory notebooks and CSV/XLSX files are ignored by default so production code and generated research data stay separate.

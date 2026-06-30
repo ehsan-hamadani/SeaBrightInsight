@@ -12,8 +12,8 @@
   {% elif msg == 'notfound' %}Record not found.
   {% elif msg == 'import_done' %}Market research import: {{ import_created or 0 }} created, {{ import_updated or 0 }} updated.
   {% elif msg == 'directors_done' %}Directors import: {{ directors_added or 0 }} new director rows added (duplicates skipped).
-  {% elif msg == 'missing_csv' %}Market Research List.csv not found in project root.
-  {% elif msg == 'missing_directors_csv' %}No directors CSV found (market_research_directors.csv).
+  {% elif msg == 'missing_csv' %}Market research CSV not found at the configured path.
+  {% elif msg == 'missing_directors_csv' %}No directors CSV found at the configured path.
   {% elif msg == 'enrich_started' %}Background update started. Refresh shortly to see changes.
   {% elif msg == 'flags_saved' %}Include / Connected updated.
   {% else %}{{ msg }}{% endif %}

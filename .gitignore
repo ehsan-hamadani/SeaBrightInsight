@@ -4,5 +4,9 @@ __pycache__/
 data/*.sqlite3
 .env
 .pytest_cache/
+*.ipynb
 *.csv
 *.xlsx
+Logo.jpeg
+archive.txt
+run_director_enrichment_test.py
